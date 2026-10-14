@@ -2,7 +2,7 @@ import type { Dict } from './en';
 
 export const ko: Dict = {
   app: {
-    name: '캠퍼스 자료실',
+    name: 'D-Share',
     tagline: '강의 자료, 과제, 공지를 한곳에서.',
   },
   nav: {

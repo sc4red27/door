@@ -3,48 +3,64 @@
 @tailwind utilities;
 
 @layer base {
+  /* D-Share palette
+   *   Primary Blue #4F74FF  key actions and active states only
+   *   Deep Navy    #1F2A44  headings
+   *   Mint Green   #A7E3C9  subtle highlights
+   *   Snow White   #FAFBFC  page background
+   * Values are "H S% L%" so Tailwind can add opacity (bg-primary/10). */
   :root {
-    --background: 210 33% 98%;
-    --foreground: 222 47% 11%;
+    --background: 210 25% 98%;          /* Snow White */
+    --foreground: 222 24% 27%;          /* body text, a softer navy */
+    --heading: 222 37% 19%;             /* Deep Navy */
     --card: 0 0% 100%;
-    --card-foreground: 222 47% 11%;
-    --primary: 226 64% 42%;
+    --card-foreground: 222 24% 27%;
+    --primary: 227 100% 65%;            /* Primary Blue */
     --primary-foreground: 0 0% 100%;
-    --secondary: 214 32% 93%;
-    --secondary-foreground: 222 47% 15%;
-    --muted: 214 32% 94%;
-    --muted-foreground: 215 19% 35%;
-    --accent: 214 40% 92%;
-    --accent-foreground: 222 47% 15%;
-    --destructive: 0 72% 42%;
+    --primary-ink: 227 72% 52%;         /* Primary Blue for text: 6:1 on white */
+    --secondary: 220 30% 96%;
+    --secondary-foreground: 222 37% 19%;
+    --muted: 220 27% 96%;
+    --muted-foreground: 220 13% 42%;
+    --accent: 220 33% 96.5%;
+    --accent-foreground: 222 37% 19%;
+    --highlight: 154 52% 77%;           /* Mint Green */
+    --highlight-soft: 154 52% 93%;
+    --highlight-foreground: 156 45% 22%;
+    --destructive: 0 65% 48%;
     --destructive-foreground: 0 0% 100%;
-    --border: 214 24% 86%;
-    --input: 214 24% 72%;
-    --ring: 226 64% 42%;
-    --mark: 38 92% 42%;
-    --radius: 0.625rem;
+    --border: 220 22% 91%;
+    --input: 220 14% 74%;
+    --ring: 227 100% 65%;
+    --mark: 38 85% 45%;
+    --radius: 0.875rem;
     color-scheme: light;
   }
 
   .dark {
-    --background: 222 40% 8%;
-    --foreground: 210 40% 96%;
-    --card: 222 36% 11%;
-    --card-foreground: 210 40% 96%;
-    --primary: 221 90% 72%;
-    --primary-foreground: 222 47% 10%;
-    --secondary: 220 26% 18%;
-    --secondary-foreground: 210 40% 96%;
-    --muted: 220 26% 16%;
-    --muted-foreground: 215 20% 70%;
-    --accent: 220 26% 20%;
-    --accent-foreground: 210 40% 96%;
-    --destructive: 0 80% 68%;
-    --destructive-foreground: 222 47% 10%;
-    --border: 220 22% 22%;
-    --input: 220 22% 34%;
-    --ring: 221 90% 72%;
-    --mark: 42 96% 60%;
+    --background: 223 33% 8%;
+    --foreground: 220 20% 82%;
+    --heading: 220 33% 96%;
+    --card: 223 30% 11%;
+    --card-foreground: 220 20% 82%;
+    --primary: 227 100% 70%;
+    --primary-foreground: 222 37% 12%;
+    --primary-ink: 227 100% 80%;
+    --secondary: 223 24% 16%;
+    --secondary-foreground: 220 33% 96%;
+    --muted: 223 24% 15%;
+    --muted-foreground: 220 14% 66%;
+    --accent: 223 24% 16%;
+    --accent-foreground: 220 33% 96%;
+    --highlight: 154 52% 77%;
+    --highlight-soft: 156 30% 17%;
+    --highlight-foreground: 154 52% 80%;
+    --destructive: 0 80% 70%;
+    --destructive-foreground: 222 37% 12%;
+    --border: 223 20% 19%;
+    --input: 223 16% 34%;
+    --ring: 227 100% 70%;
+    --mark: 42 90% 62%;
     color-scheme: dark;
   }
 
@@ -61,7 +77,9 @@
   }
 
   h1, h2, h3 {
+    color: hsl(var(--heading));
     text-wrap: balance;
+    letter-spacing: -0.01em;
   }
 
   :focus-visible {

@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { redirect } from 'next/navigation';
 import { login } from '@/actions/auth';
 import { ActionForm, SubmitButton } from '@/components/action-form';
+import { Brand } from '@/components/brand';
 import { LocaleSwitch, ThemeToggle } from '@/components/header-controls';
 import { Card, CardContent, CardDescription, CardHeader } from '@/components/ui/card';
 import { Field, Input } from '@/components/ui/form';
@@ -16,9 +17,9 @@ export default async function LoginPage() {
   const t = await getDict();
 
   return (
-    <main id="main" className="mx-auto flex min-h-dvh w-full max-w-sm flex-col justify-center gap-4 px-4 py-10">
+    <main id="main" className="mx-auto flex min-h-dvh w-full max-w-sm flex-col justify-center gap-6 px-4 py-12">
       <div className="flex items-center justify-between">
-        <p className="text-lg font-semibold tracking-tight">{t.app.name}</p>
+        <Brand size="lg" />
         <div className="flex items-center gap-1">
           <LocaleSwitch />
           <ThemeToggle />
@@ -26,7 +27,7 @@ export default async function LoginPage() {
       </div>
       <Card>
         <CardHeader>
-          <h1 className="text-xl font-semibold">{t.auth.title}</h1>
+          <h1 className="text-xl font-semibold tracking-tight">{t.auth.title}</h1>
           <CardDescription>{t.app.tagline}</CardDescription>
         </CardHeader>
         <CardContent>

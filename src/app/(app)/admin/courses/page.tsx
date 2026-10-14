@@ -64,12 +64,12 @@ export default async function AdminCoursesPage({
       {courses.length === 0 ? (
         <EmptyState>{t.admin.none}</EmptyState>
       ) : (
-        <ul className="divide-y rounded-lg border bg-card">
+        <ul className="divide-y rounded-xl border bg-card">
           {courses.map((course) => (
             <li key={course.id} className="flex flex-wrap items-center gap-x-3 gap-y-1 px-3 py-2.5 sm:px-4">
               <div className="min-w-0 flex-1 basis-56">
                 <p className="truncate text-sm font-medium">
-                  <span className="text-primary">{course.code}</span> · {course.name}
+                  <span className="text-heading">{course.code}</span> · {course.name}
                 </p>
                 <p className="text-xs text-muted-foreground">{course.professor ?? t.common.unassigned}</p>
               </div>

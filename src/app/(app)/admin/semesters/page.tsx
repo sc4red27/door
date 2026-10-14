@@ -28,7 +28,7 @@ export default async function SemestersPage() {
         <section aria-label={t.nav.semesters} className="grid content-start gap-2">
           {semesters.length === 0 ? <EmptyState>{t.admin.none}</EmptyState> : null}
           {semesters.map((semester) => (
-            <div key={semester.id} className="grid gap-2 rounded-lg border bg-card p-3">
+            <div key={semester.id} className="grid gap-2 rounded-xl border bg-card p-3">
               <ActionForm action={saveSemester} className="flex flex-wrap items-center gap-2">
                 <input type="hidden" name="id" value={semester.id} />
                 <Input

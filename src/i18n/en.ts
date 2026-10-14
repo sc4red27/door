@@ -1,6 +1,6 @@
 export const en = {
   app: {
-    name: 'Campus Materials',
+    name: 'D-Share',
     tagline: 'Lecture materials, assignments and notices in one place.',
   },
   nav: {

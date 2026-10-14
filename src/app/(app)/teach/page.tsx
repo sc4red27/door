@@ -38,7 +38,7 @@ export default async function TeachPage() {
           {t.teach.newCourse}
         </Link>
       </PageHeader>
-      <details className="mb-6 rounded-lg border bg-card px-4 py-3">
+      <details className="mb-6 rounded-xl border bg-card px-4 py-3">
         <summary className="cursor-pointer text-sm font-medium">{t.teach.importCourses}</summary>
         <div className="grid gap-3 pt-3">
           <p className="text-sm text-muted-foreground">{t.teach.importCoursesHint}</p>

@@ -21,7 +21,7 @@ export default async function DepartmentsPage() {
         <section aria-label={t.nav.departments} className="grid content-start gap-2">
           {departments.length === 0 ? <EmptyState>{t.admin.none}</EmptyState> : null}
           {departments.map((department) => (
-            <div key={department.id} className="flex flex-wrap items-start gap-2 rounded-lg border bg-card p-3">
+            <div key={department.id} className="flex flex-wrap items-start gap-2 rounded-xl border bg-card p-3">
               <ActionForm action={saveDepartment} className="flex min-w-0 flex-1 flex-wrap items-center gap-2">
                 <input type="hidden" name="id" value={department.id} />
                 <Input

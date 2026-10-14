@@ -43,7 +43,7 @@ export default async function AdminPage() {
           <li key={tile.href}>
             <Link
               href={tile.href}
-              className="flex flex-col gap-1 rounded-lg border bg-card p-4 shadow-sm transition-colors hover:border-primary/60 hover:bg-accent/40"
+              className="flex flex-col gap-1 rounded-xl border bg-card p-5 shadow-sm transition-[box-shadow,border-color] hover:border-heading/15 hover:shadow-md"
             >
               <span className="text-sm text-muted-foreground">{tile.label}</span>
               <span className="text-2xl font-semibold tabular-nums">{tile.value}</span>

@@ -18,7 +18,7 @@ export function NavLink({ href, exact, children }: { href: string; exact?: boole
       aria-current={active ? 'page' : undefined}
       className={cn(
         'whitespace-nowrap rounded-md px-3 py-2 text-sm font-medium transition-colors hover:bg-accent',
-        active ? 'bg-accent text-foreground' : 'text-muted-foreground',
+        active ? 'bg-primary/10 text-primary-ink' : 'text-muted-foreground hover:text-heading',
       )}
     >
       {children}

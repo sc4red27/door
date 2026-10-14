@@ -105,7 +105,7 @@ export function MaterialManager({ courseId, items }: { courseId: string; items: 
           {error}
         </p>
       ) : null}
-      <ul className="divide-y rounded-lg border bg-card">
+      <ul className="divide-y rounded-xl border bg-card">
         {items.map((row) => {
           const busy = busyId === row.id;
           const isEditing = editing === row.id;

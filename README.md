@@ -1,4 +1,4 @@
-# Campus Materials
+# D-Share
 
 A fast university course-materials portal. Professors upload lecture files, assignments and notices; students sign in with their student ID and see exactly their own courses for the current semester, with single-file, multi-select and whole-course ZIP downloads.
 

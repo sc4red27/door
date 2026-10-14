@@ -43,7 +43,7 @@ export default async function CoursePage({ params }: { params: Promise<{ id: str
     <>
       <div className="mb-6 flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0">
-          <p className="text-sm font-semibold uppercase tracking-wide text-primary">{course.code}</p>
+          <p className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">{course.code}</p>
           <h1 className="text-2xl font-semibold tracking-tight">{course.name}</h1>
           <div className="mt-2 flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
             <span>{course.professor ?? t.common.unassigned}</span>
@@ -106,7 +106,7 @@ export default async function CoursePage({ params }: { params: Promise<{ id: str
                               <li key={file.id}>
                                 <a
                                   href={`/api/download/${file.id}`}
-                                  className="inline-flex max-w-full items-center gap-1.5 rounded-sm text-sm text-primary hover:underline"
+                                  className="inline-flex max-w-full items-center gap-1.5 rounded-sm text-sm text-primary-ink hover:underline"
                                 >
                                   <Download className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
                                   <span className="truncate">{file.file_name}</span>

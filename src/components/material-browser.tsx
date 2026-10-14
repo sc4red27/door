@@ -299,7 +299,7 @@ export function MaterialBrowser({ items, initialMarked, groupBy, zipAll, zipAllL
       </div>
 
       {/* Select all + download all */}
-      <div className="mb-3 flex flex-wrap items-center justify-between gap-2 rounded-lg border bg-card px-3 py-2 sm:px-4">
+      <div className="mb-3 flex flex-wrap items-center justify-between gap-2 rounded-xl border bg-card px-3 py-2 sm:px-4">
         <label className="flex cursor-pointer items-center gap-3 text-sm font-medium">
           <TriCheckbox
             checked={allSelected}
@@ -326,7 +326,7 @@ export function MaterialBrowser({ items, initialMarked, groupBy, zipAll, zipAllL
             <section
               key={group.key}
               aria-label={group.label}
-              className="overflow-hidden rounded-lg border bg-card [contain-intrinsic-size:auto_320px] [content-visibility:auto]"
+              className="overflow-hidden rounded-xl border bg-card [contain-intrinsic-size:auto_320px] [content-visibility:auto]"
             >
               <div className="flex items-center gap-3 border-b bg-muted/50 px-3 py-2 sm:px-4">
                 <TriCheckbox

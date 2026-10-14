@@ -127,7 +127,7 @@ export function CsvImporter({ kind }: { kind: ImportKind }) {
         <a
           href={`data:text/csv;charset=utf-8,${encodeURIComponent(spec.sample)}`}
           download={`${kind}-sample.csv`}
-          className="inline-flex items-center gap-1 rounded-sm text-primary hover:underline"
+          className="inline-flex items-center gap-1 rounded-sm text-primary-ink hover:underline"
         >
           <FileDown className="h-4 w-4" aria-hidden="true" />
           {t.admin.sample}
@@ -206,7 +206,7 @@ export function CsvImporter({ kind }: { kind: ImportKind }) {
             ) : null}
           </div>
           {hasPasswords ? <p className="text-sm text-muted-foreground">{t.admin.passwordOnce}</p> : null}
-          <div className="max-h-80 overflow-auto rounded-lg border">
+          <div className="max-h-80 overflow-auto rounded-xl border">
             <table className="w-full text-left text-sm">
               <thead className="sticky top-0 bg-muted text-xs">
                 <tr>

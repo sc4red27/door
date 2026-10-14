@@ -8,11 +8,11 @@ export function CourseCard({ course, href, t }: { course: CourseSummary; href: s
   return (
     <Link
       href={href}
-      className="group flex min-h-28 flex-col justify-between gap-3 rounded-lg border bg-card p-4 shadow-sm transition-colors hover:border-primary/60 hover:bg-accent/40"
+      className="group flex min-h-32 flex-col justify-between gap-4 rounded-xl border bg-card p-5 shadow-sm transition-[box-shadow,border-color] hover:border-heading/15 hover:shadow-md"
     >
       <div className="min-w-0">
-        <p className="text-xs font-semibold uppercase tracking-wide text-primary">{course.code}</p>
-        <h3 className="mt-0.5 text-base font-semibold leading-snug group-hover:underline">{course.name}</h3>
+        <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{course.code}</p>
+        <h3 className="mt-1 text-base font-semibold leading-snug group-hover:underline group-hover:decoration-heading/30 group-hover:underline-offset-4">{course.name}</h3>
       </div>
       <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
         <span>{course.professor ?? t.common.unassigned}</span>

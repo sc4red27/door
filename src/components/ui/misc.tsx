@@ -5,9 +5,9 @@ import { cn } from '@/lib/utils';
 const badgeVariants = cva('inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium', {
   variants: {
     variant: {
-      default: 'bg-primary/10 text-primary',
+      default: 'bg-highlight-soft text-highlight-foreground',
       secondary: 'bg-secondary text-secondary-foreground',
-      outline: 'border text-muted-foreground',
+      outline: 'border bg-card text-muted-foreground',
       warning: 'bg-mark/15 text-foreground',
       destructive: 'bg-destructive/10 text-destructive',
     },
@@ -50,7 +50,7 @@ export function Progress({ value, label, className }: { value: number; label: st
 
 export function EmptyState({ children, className }: { children: React.ReactNode; className?: string }) {
   return (
-    <p className={cn('rounded-lg border border-dashed px-4 py-8 text-center text-sm text-muted-foreground', className)}>
+    <p className={cn('rounded-xl border border-dashed bg-card/60 px-6 py-12 text-center text-sm text-muted-foreground', className)}>
       {children}
     </p>
   );
@@ -66,10 +66,10 @@ export function PageHeader({
   children?: React.ReactNode;
 }) {
   return (
-    <div className="mb-6 flex flex-wrap items-end justify-between gap-3">
+    <div className="mb-8 flex flex-wrap items-end justify-between gap-4">
       <div className="min-w-0">
-        <h1 className="text-2xl font-semibold tracking-tight">{title}</h1>
-        {subtitle ? <p className="mt-1 text-sm text-muted-foreground">{subtitle}</p> : null}
+        <h1 className="text-2xl font-semibold tracking-tight sm:text-[1.75rem]">{title}</h1>
+        {subtitle ? <p className="mt-1.5 text-sm text-muted-foreground">{subtitle}</p> : null}
       </div>
       {children ? <div className="flex flex-wrap items-center gap-2">{children}</div> : null}
     </div>

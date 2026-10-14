@@ -97,7 +97,7 @@ export default async function UsersPage({
           {users.length === 0 ? (
             <EmptyState>{t.admin.none}</EmptyState>
           ) : (
-            <ul className="divide-y rounded-lg border bg-card">
+            <ul className="divide-y rounded-xl border bg-card">
               {users.map((user) => (
                 <li key={user.id} className="flex flex-wrap items-center gap-x-3 gap-y-1.5 px-3 py-2.5 sm:px-4">
                   <div className="min-w-0 flex-1 basis-56">

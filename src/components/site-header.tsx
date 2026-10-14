@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { LogOut } from 'lucide-react';
 import { signOut } from '@/actions/auth';
+import { Brand } from '@/components/brand';
 import { LocaleSwitch, NavLink, ThemeToggle } from '@/components/header-controls';
 import { Button } from '@/components/ui/button';
 import { getDict } from '@/i18n';
@@ -39,10 +40,10 @@ export async function SiteHeader({ user }: { user: SessionUser }) {
   ));
 
   return (
-    <header className="sticky top-0 z-40 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
-      <div className="mx-auto flex h-14 max-w-6xl items-center gap-2 px-4">
-        <Link href="/" className="mr-2 whitespace-nowrap text-base font-semibold tracking-tight">
-          {t.app.name}
+    <header className="sticky top-0 z-40 border-b bg-card/90 backdrop-blur supports-[backdrop-filter]:bg-card/75">
+      <div className="mx-auto flex h-16 max-w-6xl items-center gap-2 px-4 sm:px-6">
+        <Link href="/" className="mr-4 rounded-md" aria-label={t.app.name}>
+          <Brand />
         </Link>
         <nav aria-label={t.nav.main} className="hidden items-center gap-1 md:flex">
           {nav}

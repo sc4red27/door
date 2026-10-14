@@ -4,8 +4,9 @@ import { getDict, getLocale } from '@/i18n';
 import { I18nProvider } from '@/i18n/provider';
 
 export const metadata: Metadata = {
-  title: { default: 'Campus Materials', template: '%s · Campus Materials' },
-  description: 'University course materials, assignments and notices.',
+  title: { default: 'D-Share', template: '%s · D-Share' },
+  description: 'D-Share: course materials, assignments and notices in one place.',
+  applicationName: 'D-Share',
   robots: { index: false, follow: false }, // private portal
 };
 
@@ -13,8 +14,8 @@ export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
   themeColor: [
-    { media: '(prefers-color-scheme: light)', color: '#f8fafc' },
-    { media: '(prefers-color-scheme: dark)', color: '#0c111d' },
+    { media: '(prefers-color-scheme: light)', color: '#FAFBFC' },
+    { media: '(prefers-color-scheme: dark)', color: '#0E1320' },
   ],
 };
 

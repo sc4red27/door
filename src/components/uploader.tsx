@@ -202,8 +202,8 @@ export function Uploader({
         onDragLeave={() => setDragging(false)}
         onDrop={(event) => void onDrop(event)}
         className={cn(
-          'flex flex-col items-center gap-2 rounded-lg border-2 border-dashed px-4 py-6 text-center transition-colors',
-          dragging ? 'border-primary bg-primary/5' : 'border-input',
+          'flex flex-col items-center gap-2 rounded-xl border-2 border-dashed px-4 py-8 text-center transition-colors',
+          dragging ? 'border-primary bg-primary/5' : 'border-border bg-background',
         )}
       >
         <Upload className="h-7 w-7 text-muted-foreground" aria-hidden="true" />
@@ -211,7 +211,7 @@ export function Uploader({
           {t.teach.dropHint}{' '}
           <button
             type="button"
-            className="rounded-sm font-medium text-primary underline underline-offset-4"
+            className="rounded-sm font-medium text-primary-ink underline underline-offset-4"
             onClick={() => inputRef.current?.click()}
             disabled={busy}
           >
@@ -220,7 +220,7 @@ export function Uploader({
           {t.teach.or}{' '}
           <button
             type="button"
-            className="rounded-sm font-medium text-primary underline underline-offset-4"
+            className="rounded-sm font-medium text-primary-ink underline underline-offset-4"
             onClick={() => folderRef.current?.click()}
             disabled={busy}
           >
@@ -321,7 +321,7 @@ export function Uploader({
             ) : null}
           </div>
 
-          <ul className="divide-y rounded-lg border bg-card" aria-live="polite">
+          <ul className="divide-y rounded-xl border bg-card" aria-live="polite">
             {queue.map((item) => {
               const locked = busy || item.status !== 'queued';
               return (
@@ -365,7 +365,7 @@ export function Uploader({
                       </Select>
                     )}
                     {item.status === 'done' ? (
-                      <Check className="h-5 w-5 shrink-0 text-primary" aria-hidden="true" />
+                      <Check className="h-5 w-5 shrink-0 text-highlight-foreground" aria-hidden="true" />
                     ) : (
                       <Button
                         variant="ghost"

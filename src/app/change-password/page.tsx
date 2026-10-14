@@ -17,7 +17,7 @@ export default async function ChangePasswordPage() {
   const t = await getDict();
 
   return (
-    <main id="main" className="mx-auto flex min-h-dvh w-full max-w-sm flex-col justify-center gap-4 px-4 py-10">
+    <main id="main" className="mx-auto flex min-h-dvh w-full max-w-sm flex-col justify-center gap-6 px-4 py-12">
       <Card>
         <CardHeader>
           <h1 className="text-xl font-semibold">{t.auth.changeTitle}</h1>
