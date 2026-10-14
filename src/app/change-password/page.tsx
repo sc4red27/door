@@ -1,0 +1,68 @@
+import type { Metadata } from 'next';
+import { redirect } from 'next/navigation';
+import { changePassword, signOut } from '@/actions/auth';
+import { ActionForm, SubmitButton } from '@/components/action-form';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader } from '@/components/ui/card';
+import { Field, Input } from '@/components/ui/form';
+import { getSessionUser } from '@/lib/auth';
+import { PASSWORD_MIN_LENGTH } from '@/lib/constants';
+import { fmt, getDict } from '@/i18n';
+
+export const metadata: Metadata = { title: 'New password' };
+
+export default async function ChangePasswordPage() {
+  const user = await getSessionUser();
+  if (!user) redirect('/login');
+  const t = await getDict();
+
+  return (
+    <main id="main" className="mx-auto flex min-h-dvh w-full max-w-sm flex-col justify-center gap-4 px-4 py-10">
+      <Card>
+        <CardHeader>
+          <h1 className="text-xl font-semibold">{t.auth.changeTitle}</h1>
+          <CardDescription>{user.mustChangePassword ? t.auth.changeHint : `${user.fullName} · ${user.loginId}`}</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <ActionForm action={changePassword} className="grid gap-4">
+            {/* Lets password managers attach the new password to the right account. */}
+            <input type="text" name="username" autoComplete="username" defaultValue={user.loginId} readOnly hidden />
+            <Field
+              label={t.auth.newPassword}
+              htmlFor="password"
+              hint={fmt(t.auth.passwordRule, { n: PASSWORD_MIN_LENGTH })}
+            >
+              <Input
+                id="password"
+                name="password"
+                type="password"
+                required
+                autoFocus
+                minLength={PASSWORD_MIN_LENGTH}
+                maxLength={200}
+                autoComplete="new-password"
+              />
+            </Field>
+            <Field label={t.auth.confirmPassword} htmlFor="confirm">
+              <Input
+                id="confirm"
+                name="confirm"
+                type="password"
+                required
+                minLength={PASSWORD_MIN_LENGTH}
+                maxLength={200}
+                autoComplete="new-password"
+              />
+            </Field>
+            <SubmitButton className="w-full">{t.auth.savePassword}</SubmitButton>
+          </ActionForm>
+          <form action={signOut} className="mt-3">
+            <Button type="submit" variant="ghost" className="w-full">
+              {t.nav.signOut}
+            </Button>
+          </form>
+        </CardContent>
+      </Card>
+    </main>
+  );
+}
