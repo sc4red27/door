@@ -49,6 +49,10 @@ export default async function LoginPage() {
             </Field>
             <SubmitButton className="w-full">{t.auth.submit}</SubmitButton>
           </ActionForm>
+          <details className="mt-4 text-sm">
+            <summary className="cursor-pointer rounded-sm text-primary-ink hover:underline">{t.auth.forgot}</summary>
+            <p className="mt-2 rounded-lg bg-muted px-3 py-2.5 text-muted-foreground">{t.auth.forgotHelp}</p>
+          </details>
         </CardContent>
       </Card>
     </main>

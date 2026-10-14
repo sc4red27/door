@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { LogOut } from 'lucide-react';
+import { LogOut, UserRound } from 'lucide-react';
 import { signOut } from '@/actions/auth';
 import { Brand } from '@/components/brand';
 import { LocaleSwitch, NavLink, ThemeToggle } from '@/components/header-controls';
@@ -49,9 +49,15 @@ export async function SiteHeader({ user }: { user: SessionUser }) {
           {nav}
         </nav>
         <div className="ml-auto flex items-center gap-1">
-          <span className="hidden max-w-40 truncate text-sm text-muted-foreground lg:inline" title={user.loginId}>
-            {user.fullName}
-          </span>
+          <Link
+            href="/account"
+            title={`${t.nav.account} · ${user.loginId}`}
+            aria-label={t.nav.account}
+            className="inline-flex h-10 min-w-10 items-center justify-center gap-2 rounded-md px-2.5 text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-heading"
+          >
+            <UserRound className="h-4 w-4 shrink-0" aria-hidden="true" />
+            <span className="hidden max-w-40 truncate lg:inline">{user.fullName}</span>
+          </Link>
           <LocaleSwitch />
           <ThemeToggle />
           <form action={signOut}>

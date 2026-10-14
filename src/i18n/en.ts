@@ -17,6 +17,7 @@ export const en = {
     users: 'Users',
     import: 'CSV import',
     signOut: 'Sign out',
+    account: 'My account',
     theme: 'Toggle dark mode',
     switchLanguage: '한국어로 보기',
     languageShort: '한국어',
@@ -79,6 +80,20 @@ export const en = {
     tooShort: 'The password must be at least {n} characters.',
     mismatch: 'The passwords do not match.',
     changeFailed: 'Could not update the password. Try a different one.',
+    currentPassword: 'Current password',
+    wrongCurrent: 'Your current password is incorrect.',
+    passwordChanged: 'Your password has been changed.',
+    forgot: 'Forgot your password?',
+    forgotHelp:
+      'Ask your department administrator for a temporary password. Sign in with it and you will be asked to choose a new one.',
+  },
+  account: {
+    title: 'My account',
+    details: 'Account details',
+    loginId: 'Sign-in ID',
+    role: 'Role',
+    idHint: 'Your ID and details can only be changed by an administrator.',
+    changePassword: 'Change password',
   },
   dashboard: {
     greeting: 'Hello, {name}',

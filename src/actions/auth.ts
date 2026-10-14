@@ -1,6 +1,7 @@
 'use server';
 
 import { redirect } from 'next/navigation';
+import { createClient as createPlainClient } from '@supabase/supabase-js';
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { getSessionUser } from '@/lib/auth';
@@ -65,6 +66,20 @@ export async function changePassword(_prev: ActionState, formData: FormData): Pr
 
   if (!(await rateLimit(`password:${user.id}`, 10, 600))) return { error: t.auth.rate };
 
+  // A voluntary change (My account) must prove the current password, so an
+  // unattended signed-in browser cannot be used to take over the account.
+  // The first-login change skips this: the user just typed the temporary one.
+  if (!user.mustChangePassword) {
+    const current = String(formData.get('current') ?? '');
+    const { data: profile } = await createAdminClient().from('profiles').select('email').eq('id', user.id).maybeSingle();
+    const verifier = createPlainClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, {
+      auth: { persistSession: false, autoRefreshToken: false },
+    });
+    const { error: wrong } = await verifier.auth.signInWithPassword({ email: profile?.email ?? '', password: current });
+    if (wrong) return { error: t.auth.wrongCurrent };
+    await verifier.auth.signOut({ scope: 'local' });
+  }
+
   const supabase = await createClient();
   const { error } = await supabase.auth.updateUser({ password });
   if (error) return { error: t.auth.changeFailed };
@@ -79,5 +94,6 @@ export async function changePassword(_prev: ActionState, formData: FormData): Pr
   if (meta.error || profile.error) return { error: t.common.failed };
   await supabase.auth.refreshSession();
 
+  if (!user.mustChangePassword) return { ok: t.auth.passwordChanged };
   redirect('/');
 }
