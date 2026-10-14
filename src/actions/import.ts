@@ -1,9 +1,12 @@
 'use server';
 
 import { randomBytes } from 'node:crypto';
+import { revalidatePath, revalidateTag } from 'next/cache';
 import { z } from 'zod';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { createAdminClient } from '@/lib/supabase/admin';
+import { createClient } from '@/lib/supabase/server';
+import { COURSES_TAG } from '@/lib/data';
 import { requireUser } from '@/lib/auth';
 import { PASSWORD_MIN_LENGTH, STUDENT_EMAIL_DOMAIN } from '@/lib/constants';
 import { mapLimit } from '@/lib/utils';
@@ -274,5 +277,85 @@ export async function importEnrollments(rows: Rows, _password: string | null, of
       return results.map((r) => (r.status === 'enrolled' ? { ...r, status: 'error' as const, message: error.message } : r));
     }
   }
+  return results;
+}
+
+/* ------------------------------------------------------------------ courses */
+
+const courseRow = z.object({
+  code: z.string().trim().regex(/^[A-Za-z0-9_-]{2,20}$/),
+  name: z.string().trim().min(1).max(120),
+  department_code: z.string().trim().min(1),
+  semester: z.coerce.number().int().min(1).max(8), // level: 1st-8th semester
+  description: z.string().max(2000).optional(),
+  term: z.string().trim().optional(),
+  professor_id: z.string().trim().optional(),
+});
+
+/**
+ * courses: code, name, department_code, semester (1-8) [, description, term, professor_id]
+ * Professors always become the owner; only admins may name another professor.
+ * Inserts go through the caller's own client, so RLS still decides what is allowed,
+ * and the auto-enroll trigger adds every matching student.
+ */
+export async function importCourses(rows: Rows, _password: string | null, offset: number): Promise<ImportRowResult[]> {
+  const user = await requireUser(['professor', 'admin']);
+  const t = await getDict();
+  if (!checkInput(rows, null)) return [];
+
+  const admin = createAdminClient();
+  const maps = await lookups(admin);
+  const professorIds = [...new Set(rows.map((r) => String(r.professor_id ?? '').trim()).filter(Boolean))];
+  const { data: professors } =
+    user.role === 'admin' && professorIds.length > 0
+      ? await admin.from('profiles').select('id, login_id').eq('role', 'professor').in('login_id', professorIds)
+      : { data: [] };
+  const professorMap = new Map((professors ?? []).map((p) => [p.login_id as string, p.id as string]));
+
+  const supabase = await createClient();
+  const results = await mapLimit(rows, 5, async (raw, i): Promise<ImportRowResult> => {
+    const base = { row: offset + i + 1, id: String(raw.code ?? '') };
+    const fail = (message: string): ImportRowResult => ({ ...base, status: 'error', message });
+
+    const parsed = courseRow.safeParse(raw);
+    if (!parsed.success) {
+      const levelIssue = parsed.error.issues.some((issue) => issue.path[0] === 'semester');
+      return fail(levelIssue ? t.errors.invalidYear : t.errors.invalidRow);
+    }
+    const v = parsed.data;
+    const departmentId = maps.departments.get(v.department_code.toUpperCase());
+    if (!departmentId) return fail(fmt(t.errors.unknownDepartment, { v: v.department_code }));
+    const semesterId = v.term ? maps.semesters.get(v.term) : maps.currentSemester;
+    if (!semesterId) return fail(fmt(t.errors.unknownSemester, { v: v.term ?? '-' }));
+
+    let professorId: string | null = user.id;
+    if (user.role === 'admin') {
+      professorId = v.professor_id ? (professorMap.get(v.professor_id) ?? null) : null;
+      if (v.professor_id && !professorId) return fail(fmt(t.errors.unknownProfessor, { v: v.professor_id }));
+    }
+
+    const { data, error } = await supabase
+      .from('courses')
+      .insert({
+        code: v.code.toUpperCase(),
+        name: v.name,
+        description: v.description?.trim() || null,
+        department_id: departmentId,
+        semester_id: semesterId,
+        year: v.semester, // the `year` column holds the semester level (1-8)
+        professor_id: professorId,
+      })
+      .select('id')
+      .maybeSingle();
+    if (error) return fail(error.code === '23505' ? t.teach.duplicateCode : t.common.forbidden);
+    if (!data) return fail(t.common.forbidden);
+
+    const { count } = await admin.from('enrollments').select('student_id', { count: 'exact', head: true }).eq('course_id', data.id);
+    return { ...base, status: 'created', message: fmt(t.teach.studentsShort, { n: count ?? 0 }) };
+  });
+
+  revalidateTag(COURSES_TAG);
+  revalidatePath('/teach');
+  revalidatePath('/admin/courses');
   return results;
 }

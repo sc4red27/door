@@ -1,8 +1,9 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { FileDown, Upload } from 'lucide-react';
-import { importEnrollments, importProfessors, importStudents } from '@/actions/import';
+import { importCourses, importEnrollments, importProfessors, importStudents } from '@/actions/import';
 import { Button } from '@/components/ui/button';
 import { Field, Input } from '@/components/ui/form';
 import { Badge, Progress } from '@/components/ui/misc';
@@ -29,9 +30,23 @@ const SPEC: Record<ImportKind, { columns: string[]; sample: string; password: bo
     sample: 'student_id,course_code\r\n20263001,BUS201\r\n',
     password: false,
   },
+  courses: {
+    columns: ['code', 'name', 'department_code', 'semester'],
+    sample:
+      'code,name,department_code,semester,description\r\n' +
+      'CSE301,Operating Systems,CSE,5,Processes and memory\r\n' +
+      'CSE302,Databases,CSE,5,\r\n' +
+      'CSE401,Computer Networks,CSE,7,\r\n',
+    password: false,
+  },
 };
 
-const ACTIONS = { students: importStudents, professors: importProfessors, enrollments: importEnrollments };
+const ACTIONS = {
+  students: importStudents,
+  professors: importProfessors,
+  enrollments: importEnrollments,
+  courses: importCourses,
+};
 const CHUNK = 40; // rows per server call
 const PREVIEW = 200; // result rows rendered; the CSV download has all of them
 
@@ -48,6 +63,7 @@ function saveText(fileName: string, text: string) {
 
 export function CsvImporter({ kind }: { kind: ImportKind }) {
   const { t } = useI18n();
+  const router = useRouter();
   const spec = SPEC[kind];
   const [rows, setRows] = useState<Record<string, string>[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -96,6 +112,7 @@ export function CsvImporter({ kind }: { kind: ImportKind }) {
       setError(t.common.failed);
     } finally {
       setRunning(false);
+      router.refresh(); // e.g. new course cards on /teach
     }
   }
 

@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { Plus } from 'lucide-react';
 import { CourseCard } from '@/components/course-card';
+import { CsvImporter } from '@/components/csv-importer';
 import { buttonVariants } from '@/components/ui/button';
 import { EmptyState, PageHeader } from '@/components/ui/misc';
 import { requireUser } from '@/lib/auth';
@@ -10,6 +11,8 @@ import { createClient } from '@/lib/supabase/server';
 import { getDict } from '@/i18n';
 
 export const metadata: Metadata = { title: 'My courses' };
+// The course import runs as server actions from this page.
+export const maxDuration = 60;
 
 export default async function TeachPage() {
   const user = await requireUser(['professor', 'admin']);
@@ -35,6 +38,13 @@ export default async function TeachPage() {
           {t.teach.newCourse}
         </Link>
       </PageHeader>
+      <details className="mb-6 rounded-lg border bg-card px-4 py-3">
+        <summary className="cursor-pointer text-sm font-medium">{t.teach.importCourses}</summary>
+        <div className="grid gap-3 pt-3">
+          <p className="text-sm text-muted-foreground">{t.teach.importCoursesHint}</p>
+          <CsvImporter kind="courses" />
+        </div>
+      </details>
       {courses.length === 0 ? (
         <EmptyState>{t.teach.noCourses}</EmptyState>
       ) : (

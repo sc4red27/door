@@ -17,6 +17,7 @@ export default async function ImportPage() {
     { kind: 'students', title: t.admin.importStudents, hint: t.admin.importStudentsHint },
     { kind: 'professors', title: t.admin.importProfessors, hint: t.admin.importProfessorsHint },
     { kind: 'enrollments', title: t.admin.importEnrollments, hint: t.admin.importEnrollmentsHint },
+    { kind: 'courses', title: t.teach.importCourses, hint: `${t.teach.importCoursesHint} ${t.teach.importCoursesAdminHint}` },
   ] as const;
 
   return (

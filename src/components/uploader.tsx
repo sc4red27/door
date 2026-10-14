@@ -19,19 +19,71 @@ import { cn } from '@/lib/utils';
 type QueueItem = {
   key: number;
   file: File;
+  /** Folder path + file name, as picked or dropped ("Week 3/slides.pdf"). */
+  path: string;
   title: string;
+  type: MaterialType;
+  week: string; // '' = no week
   status: 'queued' | 'uploading' | 'done' | 'error';
   progress: number;
   error?: string;
 };
 
 const CONCURRENCY = 3;
+const MAX_WEEK = 16;
+const WEEKS = Array.from({ length: MAX_WEEK }, (_, i) => i + 1);
+// OS clutter that shows up when a whole folder is picked.
+const IGNORED = /^(\..*|thumbs\.db|desktop\.ini)$/i;
 let nextKey = 1;
 
 /**
- * Drag-and-drop multi-file upload with per-file progress.
- * Files go browser -> Supabase Storage directly (signed upload URL); the
- * server only issues the URL and records the row afterwards.
+ * Reads a week number from a folder or file name, nearest first:
+ * "Week 3", "week_03", "W3", "wk-3", "3주차", "제3주". Returns '' when none fits.
+ */
+export function detectWeek(path: string): string {
+  const parts = path.split('/').reverse();
+  for (const part of parts) {
+    const name = part.replace(/\.[A-Za-z0-9]+$/, '');
+    const match =
+      /(?:^|[^a-z])(?:week|wk|w)[\s._-]*0*(\d{1,2})(?!\d)/i.exec(name) ??
+      /(?:^|\D)0*(\d{1,2})\s*주차/.exec(name) ??
+      /제\s*0*(\d{1,2})\s*주/.exec(name);
+    const n = match ? Number(match[1]) : 0;
+    if (n >= 1 && n <= MAX_WEEK) return String(n);
+  }
+  return '';
+}
+
+/** Every file inside dropped folders (Chromium, Firefox, Safari all support entries). */
+async function filesFromDrop(items: DataTransferItemList): Promise<{ file: File; path: string }[]> {
+  const entries = Array.from(items)
+    .map((item) => item.webkitGetAsEntry?.())
+    .filter((entry): entry is FileSystemEntry => Boolean(entry));
+  const out: { file: File; path: string }[] = [];
+
+  async function walk(entry: FileSystemEntry, prefix: string): Promise<void> {
+    if (entry.isFile) {
+      const file = await new Promise<File>((resolve, reject) => (entry as FileSystemFileEntry).file(resolve, reject));
+      out.push({ file, path: prefix + file.name });
+    } else if (entry.isDirectory) {
+      const reader = (entry as FileSystemDirectoryEntry).createReader();
+      // readEntries returns at most ~100 entries per call; keep reading until empty.
+      for (;;) {
+        const batch = await new Promise<FileSystemEntry[]>((resolve, reject) => reader.readEntries(resolve, reject));
+        if (batch.length === 0) break;
+        for (const child of batch) await walk(child, `${prefix}${entry.name}/`);
+      }
+    }
+  }
+
+  for (const entry of entries) await walk(entry, '');
+  return out;
+}
+
+/**
+ * Drag-and-drop multi-file (and whole-folder) upload with per-file progress,
+ * week and type. Files go browser -> Supabase Storage directly (signed upload
+ * URL); the server only issues the URL and records the row afterwards.
  */
 export function Uploader({
   courseId,
@@ -46,10 +98,10 @@ export function Uploader({
   const router = useRouter();
   const [queue, setQueue] = useState<QueueItem[]>([]);
   const [type, setType] = useState<MaterialType>(fixedType ?? 'lecture');
-  const [week, setWeek] = useState('');
   const [busy, setBusy] = useState(false);
   const [dragging, setDragging] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
+  const folderRef = useRef<HTMLInputElement>(null);
   const idBase = assignmentId ?? courseId;
 
   const errorText = (code: UploadErrorCode) =>
@@ -64,33 +116,46 @@ export function Uploader({
   const patch = (key: number, changes: Partial<QueueItem>) =>
     setQueue((items) => items.map((item) => (item.key === key ? { ...item, ...changes } : item)));
 
-  function addFiles(files: FileList | null) {
-    if (!files || files.length === 0) return;
-    const added = Array.from(files).map((file): QueueItem => {
-      const check = validateFile(file.name, file.size);
-      return {
-        key: nextKey++,
-        file,
-        title: stripExtension(file.name).slice(0, 200),
-        status: check.ok ? 'queued' : 'error',
-        progress: 0,
-        error: check.ok ? undefined : errorText(check.reason),
-      };
-    });
-    setQueue((items) => [...items, ...added]);
+  const patchQueued = (changes: Partial<QueueItem>) =>
+    setQueue((items) => items.map((item) => (item.status === 'queued' ? { ...item, ...changes } : item)));
+
+  function addFiles(files: { file: File; path: string }[]) {
+    const added = files
+      .filter(({ file }) => !IGNORED.test(file.name))
+      .sort((a, b) => a.path.localeCompare(b.path, undefined, { numeric: true }))
+      .map(({ file, path }): QueueItem => {
+        const check = validateFile(file.name, file.size);
+        return {
+          key: nextKey++,
+          file,
+          path,
+          title: stripExtension(file.name).slice(0, 200),
+          type,
+          week: detectWeek(path),
+          status: check.ok ? 'queued' : 'error',
+          progress: 0,
+          error: check.ok ? undefined : errorText(check.reason),
+        };
+      });
+    if (added.length > 0) setQueue((items) => [...items, ...added]);
   }
 
-  function onDrop(event: DragEvent<HTMLDivElement>) {
+  const fromInput = (list: FileList | null) =>
+    addFiles(Array.from(list ?? []).map((file) => ({ file, path: file.webkitRelativePath || file.name })));
+
+  async function onDrop(event: DragEvent<HTMLDivElement>) {
     event.preventDefault();
     setDragging(false);
-    if (!busy) addFiles(event.dataTransfer.files);
+    if (busy) return;
+    const hasEntries = Array.from(event.dataTransfer.items).some((item) => item.webkitGetAsEntry);
+    if (hasEntries) addFiles(await filesFromDrop(event.dataTransfer.items));
+    else fromInput(event.dataTransfer.files);
   }
 
   async function start() {
     const pending = queue.filter((item) => item.status === 'queued');
     if (pending.length === 0 || busy) return;
     setBusy(true);
-    const weekNumber = week ? Number(week) : null;
 
     let cursor = 0;
     const worker = async () => {
@@ -105,8 +170,8 @@ export function Uploader({
             courseId,
             path,
             title: item.title.trim() || stripExtension(item.file.name),
-            type,
-            week: weekNumber,
+            type: fixedType ?? item.type,
+            week: item.week ? Number(item.week) : null,
             fileName: item.file.name,
             assignmentId: assignmentId ?? null,
           });
@@ -135,7 +200,7 @@ export function Uploader({
           setDragging(true);
         }}
         onDragLeave={() => setDragging(false)}
-        onDrop={onDrop}
+        onDrop={(event) => void onDrop(event)}
         className={cn(
           'flex flex-col items-center gap-2 rounded-lg border-2 border-dashed px-4 py-6 text-center transition-colors',
           dragging ? 'border-primary bg-primary/5' : 'border-input',
@@ -151,6 +216,15 @@ export function Uploader({
             disabled={busy}
           >
             {t.teach.browse}
+          </button>{' '}
+          {t.teach.or}{' '}
+          <button
+            type="button"
+            className="rounded-sm font-medium text-primary underline underline-offset-4"
+            onClick={() => folderRef.current?.click()}
+            disabled={busy}
+          >
+            {t.teach.chooseFolder}
           </button>
         </p>
         <p className="text-xs text-muted-foreground">{t.teach.limits}</p>
@@ -163,23 +237,44 @@ export function Uploader({
           tabIndex={-1}
           aria-hidden="true"
           onChange={(event) => {
-            addFiles(event.target.files);
+            fromInput(event.target.files);
             event.target.value = ''; // allow picking the same file again
+          }}
+        />
+        <input
+          ref={folderRef}
+          type="file"
+          multiple
+          className="sr-only"
+          tabIndex={-1}
+          aria-hidden="true"
+          // Not in React's types; picks a whole folder including subfolders.
+          {...{ webkitdirectory: '' }}
+          onChange={(event) => {
+            fromInput(event.target.files);
+            event.target.value = '';
           }}
         />
       </div>
 
       {queue.length > 0 ? (
         <>
+          <p className="text-xs text-muted-foreground">{t.teach.weekDetected}</p>
           <div className="flex flex-wrap items-end gap-3">
             {fixedType ? null : (
               <div className="grid gap-1.5">
-                <Label htmlFor={`type-${idBase}`}>{t.teach.batchType}</Label>
+                <Label htmlFor={`type-${idBase}`}>
+                  {t.teach.batchType} · {t.teach.setAll}
+                </Label>
                 <Select
                   id={`type-${idBase}`}
                   value={type}
                   disabled={busy}
-                  onChange={(event) => setType(event.target.value as MaterialType)}
+                  onChange={(event) => {
+                    const value = event.target.value as MaterialType;
+                    setType(value);
+                    patchQueued({ type: value });
+                  }}
                   className="w-40"
                 >
                   {MATERIAL_TYPES.map((value) => (
@@ -191,16 +286,21 @@ export function Uploader({
               </div>
             )}
             <div className="grid gap-1.5">
-              <Label htmlFor={`week-${idBase}`}>{t.teach.batchWeek}</Label>
+              <Label htmlFor={`week-${idBase}`}>
+                {t.teach.batchWeek} · {t.teach.setAll}
+              </Label>
               <Select
                 id={`week-${idBase}`}
-                value={week}
+                value="keep"
                 disabled={busy}
-                onChange={(event) => setWeek(event.target.value)}
+                onChange={(event) => patchQueued({ week: event.target.value })}
                 className="w-36"
               >
+                <option value="keep" disabled>
+                  —
+                </option>
                 <option value="">{t.teach.noWeek}</option>
-                {Array.from({ length: 16 }, (_, i) => i + 1).map((value) => (
+                {WEEKS.map((value) => (
                   <option key={value} value={value}>
                     {fmt(t.common.weekN, { n: value })}
                   </option>
@@ -222,50 +322,82 @@ export function Uploader({
           </div>
 
           <ul className="divide-y rounded-lg border bg-card" aria-live="polite">
-            {queue.map((item) => (
-              <li key={item.key} className="grid gap-1.5 px-3 py-2.5">
-                <div className="flex items-center gap-2">
-                  <Input
-                    value={item.title}
-                    disabled={busy || item.status !== 'queued'}
-                    maxLength={200}
-                    aria-label={fmt(t.teach.fileTitle, { name: item.file.name })}
-                    onChange={(event) => patch(item.key, { title: event.target.value })}
-                    className="h-9"
-                  />
-                  {item.status === 'done' ? (
-                    <Check className="h-5 w-5 shrink-0 text-primary" aria-hidden="true" />
-                  ) : (
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-9 w-9"
-                      disabled={item.status === 'uploading'}
-                      aria-label={fmt(t.teach.remove, { name: item.file.name })}
-                      onClick={() => setQueue((items) => items.filter((other) => other.key !== item.key))}
+            {queue.map((item) => {
+              const locked = busy || item.status !== 'queued';
+              return (
+                <li key={item.key} className="grid gap-1.5 px-3 py-2.5">
+                  <div className="flex flex-wrap items-center gap-2 sm:flex-nowrap">
+                    <Input
+                      value={item.title}
+                      disabled={locked}
+                      maxLength={200}
+                      aria-label={fmt(t.teach.fileTitle, { name: item.file.name })}
+                      onChange={(event) => patch(item.key, { title: event.target.value })}
+                      className="h-9 min-w-0 flex-1 basis-full sm:basis-auto"
+                    />
+                    <Select
+                      value={item.week}
+                      disabled={locked}
+                      aria-label={fmt(t.teach.fileWeek, { name: item.file.name })}
+                      onChange={(event) => patch(item.key, { week: event.target.value })}
+                      className="h-9 w-32 shrink-0"
                     >
-                      <X aria-hidden="true" />
-                    </Button>
-                  )}
-                </div>
-                <p className="flex flex-wrap gap-x-2 text-xs text-muted-foreground">
-                  <span className="truncate">{item.file.name}</span>
-                  <span>{formatBytes(item.file.size)}</span>
-                  <span className={item.status === 'error' ? 'font-medium text-destructive' : undefined}>
-                    {item.status === 'queued'
-                      ? t.teach.queued
-                      : item.status === 'uploading'
-                        ? `${t.teach.uploading} ${Math.round(item.progress * 100)}%`
-                        : item.status === 'done'
-                          ? t.teach.uploaded
-                          : item.error}
-                  </span>
-                </p>
-                {item.status === 'uploading' ? (
-                  <Progress value={item.progress * 100} label={`${t.teach.uploading}: ${item.file.name}`} />
-                ) : null}
-              </li>
-            ))}
+                      <option value="">{t.teach.noWeek}</option>
+                      {WEEKS.map((value) => (
+                        <option key={value} value={value}>
+                          {fmt(t.common.weekN, { n: value })}
+                        </option>
+                      ))}
+                    </Select>
+                    {fixedType ? null : (
+                      <Select
+                        value={item.type}
+                        disabled={locked}
+                        aria-label={fmt(t.teach.fileType, { name: item.file.name })}
+                        onChange={(event) => patch(item.key, { type: event.target.value as MaterialType })}
+                        className="h-9 w-32 shrink-0"
+                      >
+                        {MATERIAL_TYPES.map((value) => (
+                          <option key={value} value={value}>
+                            {t.types[value]}
+                          </option>
+                        ))}
+                      </Select>
+                    )}
+                    {item.status === 'done' ? (
+                      <Check className="h-5 w-5 shrink-0 text-primary" aria-hidden="true" />
+                    ) : (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-9 w-9 shrink-0"
+                        disabled={item.status === 'uploading'}
+                        aria-label={fmt(t.teach.remove, { name: item.file.name })}
+                        onClick={() => setQueue((items) => items.filter((other) => other.key !== item.key))}
+                      >
+                        <X aria-hidden="true" />
+                      </Button>
+                    )}
+                  </div>
+                  <p className="flex flex-wrap gap-x-2 text-xs text-muted-foreground">
+                    <span className="truncate">{item.path}</span>
+                    <span>{formatBytes(item.file.size)}</span>
+                    <span className={item.status === 'error' ? 'font-medium text-destructive' : undefined}>
+                      {item.status === 'queued'
+                        ? t.teach.queued
+                        : item.status === 'uploading'
+                          ? `${t.teach.uploading} ${Math.round(item.progress * 100)}%`
+                          : item.status === 'done'
+                            ? t.teach.uploaded
+                            : item.error}
+                    </span>
+                  </p>
+                  {item.status === 'uploading' ? (
+                    <Progress value={item.progress * 100} label={`${t.teach.uploading}: ${item.file.name}`} />
+                  ) : null}
+                </li>
+              );
+            })}
           </ul>
         </>
       ) : null}

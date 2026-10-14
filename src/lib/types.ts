@@ -56,7 +56,7 @@ export type AssignmentItem = {
 export type Department = { id: string; code: string; name: string };
 export type Semester = { id: string; name: string; start_date: string; end_date: string; is_current: boolean };
 
-export type ImportKind = 'students' | 'professors' | 'enrollments';
+export type ImportKind = 'students' | 'professors' | 'enrollments' | 'courses';
 export type ImportRowResult = {
   row: number;
   id: string;
