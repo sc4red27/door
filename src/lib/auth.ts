@@ -9,6 +9,8 @@ export type SessionUser = {
   role: Role;
   loginId: string;
   fullName: string;
+  /** Sign-in email; for students the internal <id>@students.local until they add their own. */
+  email: string;
   departmentId: string | null;
   year: number | null;
   semesterId: string | null;
@@ -32,7 +34,7 @@ export const getSessionUser = cache(async (): Promise<SessionUser | null> => {
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('id, role, login_id, full_name, department_id, year, semester_id, must_change_password')
+    .select('id, role, login_id, full_name, email, department_id, year, semester_id, must_change_password')
     .eq('id', userId)
     .maybeSingle();
   if (!profile) return null;
@@ -42,6 +44,7 @@ export const getSessionUser = cache(async (): Promise<SessionUser | null> => {
     role: profile.role as Role,
     loginId: profile.login_id,
     fullName: profile.full_name,
+    email: profile.email,
     departmentId: profile.department_id,
     year: profile.year,
     semesterId: profile.semester_id,

@@ -84,12 +84,22 @@ const studentRow = z.object({
   term: z.string().optional(),
 });
 
-/** students: student_id, name, department_code, semester (1-8) [, term] */
-export async function importStudents(rows: Rows, password: string | null, offset: number): Promise<ImportRowResult[]> {
+/**
+ * students: student_id, name, department_code, semester (1-8) [, term]
+ * With `idAsPassword`, each new student's first password is their own student
+ * ID; they must add an email and choose a new password at first sign-in.
+ */
+export async function importStudents(
+  rows: Rows,
+  password: string | null,
+  offset: number,
+  options: { idAsPassword?: boolean } = {},
+): Promise<ImportRowResult[]> {
   await requireUser(['admin']);
   const t = await getDict();
   if (!checkInput(rows, password)) return [];
-  if (password !== null && password.length < PASSWORD_MIN_LENGTH) {
+  const idAsPassword = options.idAsPassword === true;
+  if (!idAsPassword && password !== null && password.length < PASSWORD_MIN_LENGTH) {
     return rows.map((r, i) => ({
       row: offset + i + 1,
       id: String(r.student_id ?? ''),
@@ -131,14 +141,17 @@ export async function importStudents(rows: Rows, password: string | null, offset
       if (error) return fail(error.message);
       studentId = found.id as string;
     } else {
-      issued = password ?? tempPassword();
+      issued = idAsPassword ? v.student_id : (password ?? tempPassword());
       const created = await createAccount(admin, {
         email: `${v.student_id.toLowerCase()}@${STUDENT_EMAIL_DOMAIN}`,
         password: issued,
         role: 'student',
         profile: { ...profile, login_id: v.student_id },
       });
-      if ('error' in created) return fail(fmt(t.errors.createFailed, { v: created.error }));
+      if ('error' in created) {
+        const tooShort = idAsPassword && /password/i.test(created.error);
+        return fail(tooShort ? t.errors.idTooShort : fmt(t.errors.createFailed, { v: created.error }));
+      }
       studentId = created.id;
     }
 
@@ -151,7 +164,7 @@ export async function importStudents(rows: Rows, password: string | null, offset
       status: found ? 'updated' : 'created',
       message: fmt(t.admin.autoEnrolled, { n: Number(count ?? 0) }),
       // Only echo passwords that were generated here; the admin already knows a shared one.
-      password: issued && password === null ? issued : undefined,
+      password: issued && password === null && !idAsPassword ? issued : undefined,
     };
   });
 }

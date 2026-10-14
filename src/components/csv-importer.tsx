@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { FileDown, Upload } from 'lucide-react';
 import { importCourses, importEnrollments, importProfessors, importStudents } from '@/actions/import';
 import { Button } from '@/components/ui/button';
-import { Field, Input } from '@/components/ui/form';
+import { Checkbox, Field, Input, Label } from '@/components/ui/form';
 import { Badge, Progress } from '@/components/ui/misc';
 import { useI18n } from '@/i18n/provider';
 import { fmt } from '@/i18n/shared';
@@ -68,6 +68,9 @@ export function CsvImporter({ kind }: { kind: ImportKind }) {
   const [rows, setRows] = useState<Record<string, string>[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [password, setPassword] = useState('');
+  // Students: first password = their own student ID (the default).
+  const [idAsPassword, setIdAsPassword] = useState(kind === 'students');
+  const usesPassword = spec.password && !idAsPassword;
   const [running, setRunning] = useState(false);
   const [done, setDone] = useState(0);
   const [results, setResults] = useState<ImportRowResult[]>([]);
@@ -90,7 +93,7 @@ export function CsvImporter({ kind }: { kind: ImportKind }) {
   }
 
   async function start() {
-    if (spec.password && password && password.length < PASSWORD_MIN_LENGTH) {
+    if (usesPassword && password && password.length < PASSWORD_MIN_LENGTH) {
       setError(fmt(t.errors.weakPassword, { n: PASSWORD_MIN_LENGTH }));
       return;
     }
@@ -102,7 +105,7 @@ export function CsvImporter({ kind }: { kind: ImportKind }) {
     try {
       let offset = 0;
       for (const part of chunk(rows, CHUNK)) {
-        const batch = await ACTIONS[kind](part, spec.password && password ? password : null, offset);
+        const batch = await ACTIONS[kind](part, usesPassword && password ? password : null, offset, { idAsPassword });
         collected.push(...batch);
         offset += part.length;
         setDone(offset);
@@ -145,7 +148,21 @@ export function CsvImporter({ kind }: { kind: ImportKind }) {
             onChange={(event) => void onFile(event.target.files?.[0])}
           />
         </Field>
-        {spec.password ? (
+        {kind === 'students' ? (
+          <div className="grid content-start gap-1.5 sm:col-span-2">
+            <div className="flex items-center gap-2">
+              <Checkbox
+                id="id-as-password"
+                checked={idAsPassword}
+                disabled={running}
+                onChange={(event) => setIdAsPassword(event.target.checked)}
+              />
+              <Label htmlFor="id-as-password">{t.admin.idAsPassword}</Label>
+            </div>
+            <p className="text-xs text-muted-foreground">{t.admin.idAsPasswordHint}</p>
+          </div>
+        ) : null}
+        {usesPassword ? (
           <Field label={`${t.admin.tempPassword} (${t.common.optional})`} htmlFor={`pw-${kind}`} hint={t.admin.tempPasswordHint}>
             <Input
               id={`pw-${kind}`}

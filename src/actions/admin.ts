@@ -139,26 +139,30 @@ export async function promoteStudents(_prev: ActionState, formData: FormData): P
 
 /* -------------------------------------------------------------------- users */
 
-/** Sets a new temporary password and forces a change at next sign-in. */
-export async function resetPassword(userId: string): Promise<{ password: string } | { error: string }> {
+/**
+ * Sets a new temporary password and forces a change at next sign-in.
+ * Students go back to their student ID; staff get a random one.
+ */
+export async function resetPassword(userId: string): Promise<{ password: string; isId: boolean } | { error: string }> {
   await requireUser(['admin']);
   const t = await getDict();
   if (!isUuid(userId)) return { error: t.common.invalid };
 
   const admin = createAdminClient();
-  const { data: profile } = await admin.from('profiles').select('role').eq('id', userId).maybeSingle();
+  const { data: profile } = await admin.from('profiles').select('role, login_id').eq('id', userId).maybeSingle();
   if (!profile) return { error: t.common.invalid };
 
-  const password = randomBytes(9).toString('base64url');
+  const isId = profile.role === 'student';
+  const password = isId ? (profile.login_id as string) : randomBytes(9).toString('base64url');
   const { error } = await admin.auth.admin.updateUserById(userId, {
     password,
     app_metadata: { role: profile.role, must_change_password: true },
   });
-  if (error) return { error: t.common.failed };
+  if (error) return { error: isId && /password/i.test(error.message) ? t.errors.idTooShort : t.common.failed };
   await admin.from('profiles').update({ must_change_password: true }).eq('id', userId);
 
   revalidatePath('/admin/users');
-  return { password };
+  return { password, isId };
 }
 
 const enrollSchema = z.object({

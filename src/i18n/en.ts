@@ -83,6 +83,10 @@ export const en = {
     currentPassword: 'Current password',
     wrongCurrent: 'Your current password is incorrect.',
     passwordChanged: 'Your password has been changed.',
+    notId: 'Choose a password that is different from your ID.',
+    stepEmail: 'Step 1 of 2 · Add your email',
+    stepEmailHint: 'Welcome! First add your own email address. You can then sign in with it or with your ID.',
+    stepPassword: 'Step 2 of 2 · Choose a new password',
     forgot: 'Forgot your password?',
     forgotHelp:
       'Ask your department administrator for a temporary password. Sign in with it and you will be asked to choose a new one.',
@@ -94,6 +98,14 @@ export const en = {
     role: 'Role',
     idHint: 'Your ID and details can only be changed by an administrator.',
     changePassword: 'Change password',
+    email: 'Email',
+    emailNotSet: 'Not added yet',
+    emailHint: 'You can sign in with this email or with your ID.',
+    saveEmail: 'Save email',
+    emailSaved: 'Email saved.',
+    emailTaken: 'This email is already used by another account.',
+    invalidEmail: 'Enter a valid personal email address.',
+    emailFirst: 'Add your email first. Then you can change your password.',
   },
   dashboard: {
     greeting: 'Hello, {name}',
@@ -279,6 +291,9 @@ export const en = {
     resetPassword: 'Reset password',
     resetConfirm: 'Reset the password of {name}?',
     resetDone: 'New temporary password:',
+    resetToId: 'Reset. The temporary password is the student ID:',
+    idAsPassword: "Use each student's ID as their first password",
+    idAsPasswordHint: 'Students sign in with their ID as both username and password, then add their email and choose a new password.',
     enrollTitle: 'Manual enrollment',
     enrollHint: 'Add or remove a single course for a student (electives, courses from other departments).',
     studentId: 'Student ID',
@@ -302,6 +317,8 @@ export const en = {
     idInUse: 'This ID belongs to a non-student account',
     createFailed: 'Could not create the account: {v}',
     weakPassword: 'The temporary password must be at least {n} characters.',
+    idTooShort:
+      'Supabase rejected the student ID as a password (too short). Lower "Minimum password length" in Supabase → Authentication → Providers → Email.',
   },
 };
 

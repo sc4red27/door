@@ -132,7 +132,8 @@ Seed data: 2 departments (CSE, BUS), 2 semesters (2026-1 past, 2026-2 current), 
 
   `semester` is the student's level, 1 to 8. `term` is a calendar term such as `2026-2`; leave it out to use the current term.
 
-  Leave the temporary password empty to generate one per user (shown once, downloadable as CSV), or type one shared password. Either way the user must change it at first sign-in. Re-importing an existing student ID updates department/year/semester and re-runs auto-enroll.
+  Students: by default each new student's first password is their own student ID ("Use each student's ID as their first password"). At first sign-in they must (1) add their own email, which then also works as a sign-in name, and (2) choose a new password. **Admin → Users → Reset password** puts a student back to their ID. Supabase's *Minimum password length* (Authentication → Providers → Email) must not be longer than your student IDs.
+  Professors (or students with the option unticked): leave the temporary password empty to generate one per user (shown once, downloadable as CSV), or type one shared password. Either way the user must change it at first sign-in. Re-importing an existing student ID updates department/year/semester and re-runs auto-enroll.
 - *Users:* search, reset a password, add or remove a single enrollment.
 
 **Professor** — create and edit courses (any department, target semester 1st–8th; the term is always the current one), drag-and-drop multi-file upload with per-file progress, set type and week, edit / replace / delete files, post notices, create assignments with due dates and attached files.

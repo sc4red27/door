@@ -1,12 +1,14 @@
 'use server';
 
+import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
+import { z } from 'zod';
 import { createClient as createPlainClient } from '@supabase/supabase-js';
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { getSessionUser } from '@/lib/auth';
 import { clientIp, rateLimit } from '@/lib/rate-limit';
-import { PASSWORD_MIN_LENGTH, STUDENT_EMAIL_DOMAIN } from '@/lib/constants';
+import { PASSWORD_MIN_LENGTH, STUDENT_EMAIL_DOMAIN, hasOwnEmail } from '@/lib/constants';
 import { fmt, getDict } from '@/i18n';
 import type { ActionState } from '@/lib/types';
 
@@ -63,6 +65,9 @@ export async function changePassword(_prev: ActionState, formData: FormData): Pr
     return { error: fmt(t.auth.tooShort, { n: PASSWORD_MIN_LENGTH }) };
   }
   if (password !== confirm) return { error: t.auth.mismatch };
+  // An email comes first, so the account has a real address before it gets a real password.
+  if (!hasOwnEmail(user.email)) return { error: t.account.emailFirst };
+  if (password.toLowerCase() === user.loginId.toLowerCase()) return { error: t.auth.notId };
 
   if (!(await rateLimit(`password:${user.id}`, 10, 600))) return { error: t.auth.rate };
 
@@ -96,4 +101,39 @@ export async function changePassword(_prev: ActionState, formData: FormData): Pr
 
   if (!user.mustChangePassword) return { ok: t.auth.passwordChanged };
   redirect('/');
+}
+
+/**
+ * Adds or changes the user's own email. It becomes the account's sign-in
+ * address too (signing in with the student ID keeps working, because the
+ * login form looks the email up by ID).
+ */
+export async function saveEmail(_prev: ActionState, formData: FormData): Promise<ActionState> {
+  const t = await getDict();
+  const user = await getSessionUser();
+  if (!user) redirect('/login');
+
+  const parsed = z.string().trim().toLowerCase().email().max(200).safeParse(formData.get('email'));
+  if (!parsed.success || !hasOwnEmail(parsed.data)) return { error: t.account.invalidEmail };
+  const email = parsed.data;
+  if (email === user.email.toLowerCase()) return { ok: t.account.emailSaved };
+
+  if (!(await rateLimit(`email:${user.id}`, 10, 600))) return { error: t.auth.rate };
+
+  const admin = createAdminClient();
+  const { data: taken } = await admin.from('profiles').select('id').eq('email', email).neq('id', user.id).maybeSingle();
+  if (taken) return { error: t.account.emailTaken };
+
+  // Admin API: no confirmation mail (the project has no mail service set up).
+  const { error } = await admin.auth.admin.updateUserById(user.id, { email, email_confirm: true });
+  if (error) return { error: /already|registered|exists/i.test(error.message) ? t.account.emailTaken : t.common.failed };
+  const { error: profileError } = await admin.from('profiles').update({ email }).eq('id', user.id);
+  if (profileError) {
+    await admin.auth.admin.updateUserById(user.id, { email: user.email, email_confirm: true }); // keep both in step
+    return { error: t.common.failed };
+  }
+
+  revalidatePath('/account');
+  revalidatePath('/change-password');
+  return { ok: t.account.emailSaved };
 }

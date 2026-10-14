@@ -1,6 +1,11 @@
 export const BUCKET = 'materials';
 export const MAX_FILE_BYTES = 100 * 1024 * 1024;
 export const STUDENT_EMAIL_DOMAIN = process.env.NEXT_PUBLIC_STUDENT_EMAIL_DOMAIN || 'students.local';
+
+/** Students start with an internal address (<id>@students.local) until they add their own. */
+export function hasOwnEmail(email: string | null | undefined): boolean {
+  return Boolean(email) && !email!.toLowerCase().endsWith(`@${STUDENT_EMAIL_DOMAIN}`);
+}
 export const APP_TIMEZONE = process.env.NEXT_PUBLIC_APP_TIMEZONE || 'Asia/Seoul';
 
 export const MATERIAL_TYPES = ['lecture', 'assignment', 'notice', 'other'] as const;

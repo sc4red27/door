@@ -10,12 +10,12 @@ import { fmt } from '@/i18n/shared';
 export function ResetPasswordButton({ userId, name }: { userId: string; name: string }) {
   const { t } = useI18n();
   const [pending, startTransition] = useTransition();
-  const [result, setResult] = useState<{ password?: string; error?: string } | null>(null);
+  const [result, setResult] = useState<{ password?: string; isId?: boolean; error?: string } | null>(null);
 
   if (result?.password) {
     return (
       <span role="status" className="text-xs">
-        {t.admin.resetDone} <code className="select-all rounded bg-muted px-1.5 py-0.5 font-mono">{result.password}</code>
+        {result.isId ? t.admin.resetToId : t.admin.resetDone} <code className="select-all rounded bg-muted px-1.5 py-0.5 font-mono">{result.password}</code>
       </span>
     );
   }

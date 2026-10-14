@@ -1,11 +1,12 @@
 import type { Metadata } from 'next';
 import { changePassword } from '@/actions/auth';
 import { ActionForm, SubmitButton } from '@/components/action-form';
+import { EmailForm } from '@/components/email-form';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Field, Input } from '@/components/ui/form';
 import { PageHeader } from '@/components/ui/misc';
 import { requireUser } from '@/lib/auth';
-import { PASSWORD_MIN_LENGTH } from '@/lib/constants';
+import { PASSWORD_MIN_LENGTH, hasOwnEmail } from '@/lib/constants';
 import { getDepartments, getSemesters } from '@/lib/data';
 import { fmt, getDict } from '@/i18n';
 
@@ -16,11 +17,13 @@ export default async function AccountPage() {
   const [t, departments, semesters] = await Promise.all([getDict(), getDepartments(), getSemesters()]);
   const department = departments.find((d) => d.id === user.departmentId);
   const term = semesters.find((s) => s.id === user.semesterId);
+  const ownEmail = hasOwnEmail(user.email) ? user.email : null;
 
   const rows: [string, string][] = [
     [t.common.name, user.fullName],
     [t.account.loginId, user.loginId],
     [t.account.role, t.roles[user.role]],
+    [t.account.email, ownEmail ?? t.account.emailNotSet],
   ];
   if (department) rows.push([t.common.department, `${department.code} · ${department.name}`]);
   if (user.role === 'student' && user.year) rows.push([t.common.level, t.common.levels[user.year - 1]]);
@@ -49,9 +52,21 @@ export default async function AccountPage() {
 
         <Card>
           <CardHeader>
-            <CardTitle>{t.account.changePassword}</CardTitle>
+            <CardTitle>{t.account.email}</CardTitle>
+            {ownEmail ? null : <CardDescription>{t.account.emailFirst}</CardDescription>}
           </CardHeader>
           <CardContent>
+            <EmailForm t={t} current={ownEmail ?? undefined} />
+          </CardContent>
+        </Card>
+
+        <Card className={ownEmail ? undefined : 'opacity-60'}>
+          <CardHeader>
+            <CardTitle>{t.account.changePassword}</CardTitle>
+            {ownEmail ? null : <CardDescription>{t.account.emailFirst}</CardDescription>}
+          </CardHeader>
+          <CardContent>
+            {ownEmail ? (
             <ActionForm action={changePassword} resetOnSuccess className="grid gap-4">
               {/* Lets password managers attach the new password to the right account. */}
               <input type="text" name="username" autoComplete="username" defaultValue={user.loginId} readOnly hidden />
@@ -84,6 +99,7 @@ export default async function AccountPage() {
                 <SubmitButton>{t.auth.savePassword}</SubmitButton>
               </div>
             </ActionForm>
+            ) : null}
           </CardContent>
         </Card>
       </div>
