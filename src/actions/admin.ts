@@ -7,6 +7,7 @@ import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { requireUser } from '@/lib/auth';
 import { COURSES_TAG } from '@/lib/data';
+import { planTerms, todayInAppZone } from '@/lib/terms';
 import { formObject, isUuid } from '@/lib/utils';
 import { fmt, getDict } from '@/i18n';
 import type { ActionState } from '@/lib/types';
@@ -235,4 +236,49 @@ export async function deleteUser(userId: string): Promise<{ ok: true } | { error
 
   revalidatePath('/admin', 'layout');
   return { ok: true };
+}
+
+/**
+ * Creates every term from the given first term up to the term running today
+ * (spring "<year>-1" / fall "<year>-2", 6 months apart). Existing terms are
+ * kept as they are; optionally the latest one becomes the current term.
+ */
+export async function generateTerms(_prev: ActionState, formData: FormData): Promise<ActionState> {
+  await requireUser(['admin']);
+  const t = await getDict();
+  const first = {
+    name: String(formData.get('name') ?? '').trim(),
+    start_date: String(formData.get('start_date') ?? ''),
+    end_date: String(formData.get('end_date') ?? ''),
+  };
+  const plan = planTerms(first, todayInAppZone());
+  if ('error' in plan) return { error: t.admin.termPlanErrors[plan.error] };
+
+  const supabase = await createClient();
+  const { data: existing, error: readError } = await supabase.from('semesters').select('name');
+  if (readError) return { error: t.common.failed };
+  const taken = new Set((existing ?? []).map((s) => s.name as string));
+  const missing = plan.terms.filter((term) => !taken.has(term.name));
+
+  if (missing.length > 0) {
+    const { error } = await supabase.from('semesters').insert(missing);
+    if (error) return { error: error.code === '23505' ? t.admin.duplicate : t.common.failed };
+  }
+
+  const latest = plan.terms[plan.terms.length - 1];
+  if (formData.get('set_current') === 'on') {
+    const { data: row } = await supabase.from('semesters').select('id').eq('name', latest.name).single();
+    const { error } = row ? await supabase.rpc('set_current_semester', { p_semester: row.id }) : { error: true };
+    if (error) return { error: t.common.failed };
+  }
+
+  revalidateTag(COURSES_TAG);
+  revalidatePath('/admin', 'layout');
+  return {
+    ok: fmt(t.admin.termsGenerated, {
+      created: missing.length,
+      kept: plan.terms.length - missing.length,
+      latest: latest.name,
+    }),
+  };
 }
