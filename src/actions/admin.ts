@@ -210,3 +210,29 @@ export async function manualEnrollment(_prev: ActionState, formData: FormData): 
     .eq('course_id', course.id);
   return error ? { error: t.common.failed } : { ok: t.admin.unenrolledOk };
 }
+
+/**
+ * Permanently deletes an account. Profile, enrollments and bookmarks go with
+ * it (ON DELETE CASCADE); courses a professor taught stay, unassigned.
+ * Admins cannot delete themselves or the last remaining admin.
+ */
+export async function deleteUser(userId: string): Promise<{ ok: true } | { error: string }> {
+  const me = await requireUser(['admin']);
+  const t = await getDict();
+  if (!isUuid(userId)) return { error: t.common.invalid };
+  if (userId === me.id) return { error: t.admin.cannotDeleteSelf };
+
+  const admin = createAdminClient();
+  const { data: target } = await admin.from('profiles').select('role').eq('id', userId).maybeSingle();
+  if (!target) return { error: t.common.invalid };
+  if (target.role === 'admin') {
+    const { count } = await admin.from('profiles').select('id', { count: 'exact', head: true }).eq('role', 'admin');
+    if ((count ?? 0) <= 1) return { error: t.admin.cannotDeleteLastAdmin };
+  }
+
+  const { error } = await admin.auth.admin.deleteUser(userId);
+  if (error) return { error: t.common.failed };
+
+  revalidatePath('/admin', 'layout');
+  return { ok: true };
+}

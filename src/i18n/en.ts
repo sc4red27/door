@@ -294,6 +294,11 @@ export const en = {
     resetPassword: 'Reset password',
     resetConfirm: 'Reset the password of {name}?',
     resetDone: 'New temporary password:',
+    deleteUser: 'Delete user',
+    deleteUserConfirm:
+      'Permanently delete {name} ({id})? Their account, enrollments and marked files are removed. Courses they teach stay, unassigned. This cannot be undone.',
+    cannotDeleteSelf: 'You cannot delete your own account.',
+    cannotDeleteLastAdmin: 'This is the last administrator account and cannot be deleted.',
     resetToId: 'Reset. The temporary password is the student ID:',
     idAsPassword: "Use each student's ID as their first password",
     idAsPasswordHint: 'Students sign in with their ID as both username and password, then add their email and choose a new password.',

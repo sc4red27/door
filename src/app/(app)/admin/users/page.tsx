@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { manualEnrollment } from '@/actions/admin';
 import { ActionForm, SubmitButton } from '@/components/action-form';
+import { DeleteUserButton } from '@/components/delete-user-button';
 import { ResetPasswordButton } from '@/components/reset-password-button';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -35,7 +36,7 @@ export default async function UsersPage({
 }: {
   searchParams: Promise<{ q?: string; role?: string; page?: string }>;
 }) {
-  await requireUser(['admin']);
+  const me = await requireUser(['admin']);
   const [params, t, semesters] = await Promise.all([searchParams, getDict(), getSemesters()]);
 
   // Strip characters that have a meaning in PostgREST filter syntax.
@@ -114,6 +115,9 @@ export default async function UsersPage({
                     </p>
                   </div>
                   <ResetPasswordButton userId={user.id} name={user.full_name} />
+                  {user.id === me.id ? null : (
+                    <DeleteUserButton userId={user.id} name={user.full_name} loginId={user.login_id} />
+                  )}
                 </li>
               ))}
             </ul>
