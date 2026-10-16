@@ -19,4 +19,21 @@ export function validateFile(name: string, size: number): FileCheck {
   return { ok: true, ext };
 }
 
+/**
+ * Content types a browser would render or run instead of downloading. Upload
+ * requests declare their own type, so a renamed page.html -> page.txt could
+ * still be stored as text/html; the server rejects those after upload.
+ */
+const ACTIVE_CONTENT = /^(text\/html|application\/xhtml\+xml|image\/svg\+xml|text\/javascript|application\/(x-)?javascript|application\/ecmascript|text\/ecmascript|application\/x-sh|text\/x-sh)(\s*;|\s*$)/i;
+
+export function isActiveContent(mime: string): boolean {
+  return ACTIVE_CONTENT.test(mime.trim());
+}
+
+/** The stored key (<course>/<uuid>.<ext>) must carry the same extension as the declared file name. */
+export function sameExtension(path: string, fileName: string): boolean {
+  const ext = fileExtension(fileName);
+  return ext !== '' && fileExtension(path) === ext;
+}
+
 export const ACCEPT_ATTRIBUTE = ALLOWED_EXTENSIONS.map((ext) => `.${ext}`).join(',');

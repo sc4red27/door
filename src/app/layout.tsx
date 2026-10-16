@@ -1,5 +1,6 @@
 import './globals.css';
 import type { Metadata, Viewport } from 'next';
+import { headers } from 'next/headers';
 import { getDict, getLocale } from '@/i18n';
 import { I18nProvider } from '@/i18n/provider';
 
@@ -24,11 +25,13 @@ const themeScript =
   "try{var t=localStorage.getItem('theme');if(t==='dark'||(!t&&matchMedia('(prefers-color-scheme: dark)').matches))document.documentElement.classList.add('dark')}catch(e){}";
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
-  const [locale, dict] = await Promise.all([getLocale(), getDict()]);
+  const [locale, dict, requestHeaders] = await Promise.all([getLocale(), getDict(), headers()]);
+  // Set by the middleware together with the Content-Security-Policy.
+  const nonce = requestHeaders.get('x-nonce') ?? undefined;
   return (
     <html lang={locale} suppressHydrationWarning>
       <head>
-        <script dangerouslySetInnerHTML={{ __html: themeScript }} />
+        <script nonce={nonce} dangerouslySetInnerHTML={{ __html: themeScript }} />
       </head>
       <body className="min-h-dvh font-sans antialiased">
         <a

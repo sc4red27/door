@@ -10,12 +10,13 @@ export const APP_TIMEZONE = process.env.NEXT_PUBLIC_APP_TIMEZONE || 'Asia/Seoul'
 
 export const MATERIAL_TYPES = ['lecture', 'assignment', 'notice', 'other'] as const;
 
-// Keep in sync with public.is_allowed_extension() in supabase/migrations/0003_storage.sql
+// Keep in sync with public.is_allowed_extension() in supabase/migrations/0004_security_hardening.sql.
+// No html / js / sh: files a browser or shell would run directly are not accepted.
 export const ALLOWED_EXTENSIONS = [
   'pdf', 'ppt', 'pptx', 'doc', 'docx', 'xls', 'xlsx', 'hwp', 'hwpx', 'txt', 'md', 'csv',
   'zip', 'png', 'jpg', 'jpeg', 'gif', 'webp',
-  'c', 'h', 'cpp', 'hpp', 'java', 'py', 'js', 'jsx', 'ts', 'tsx', 'json', 'html', 'css', 'sql',
-  'ipynb', 'r', 'm', 'go', 'rs', 'kt', 'swift', 'sh', 'yaml', 'yml', 'xml',
+  'c', 'h', 'cpp', 'hpp', 'java', 'py', 'jsx', 'ts', 'tsx', 'json', 'css', 'sql',
+  'ipynb', 'r', 'm', 'go', 'rs', 'kt', 'swift', 'yaml', 'yml', 'xml',
 ] as const;
 
 export const SIGNED_URL_TTL = 60; // seconds, single-file download

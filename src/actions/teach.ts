@@ -9,7 +9,7 @@ import { requireUser } from '@/lib/auth';
 import { rateLimit } from '@/lib/rate-limit';
 import { COURSES_TAG, courseTag } from '@/lib/data';
 import { BUCKET, MATERIAL_TYPES, MAX_FILE_BYTES } from '@/lib/constants';
-import { validateFile } from '@/lib/files';
+import { isActiveContent, sameExtension, validateFile } from '@/lib/files';
 import { chunk, formObject, isUuid } from '@/lib/utils';
 import { getDict } from '@/i18n';
 import type { ActionState, UploadErrorCode } from '@/lib/types';
@@ -148,7 +148,7 @@ export async function registerMaterial(
   if (!parsed.success) return { error: 'failed' };
   const v = parsed.data;
   if (!v.path.startsWith(`${v.courseId}/`)) return { error: 'forbidden' };
-  if (!validateFile(v.fileName, 1).ok) return { error: 'type' };
+  if (!validateFile(v.fileName, 1).ok || !sameExtension(v.path, v.fileName)) return { error: 'type' };
 
   const supabase = await createClient();
   const object = await storedObject(supabase, v.path);
@@ -156,6 +156,10 @@ export async function registerMaterial(
   if (object.size <= 0 || object.size > MAX_FILE_BYTES) {
     await supabase.storage.from(BUCKET).remove([v.path]);
     return { error: 'size' };
+  }
+  if (isActiveContent(object.mime)) {
+    await supabase.storage.from(BUCKET).remove([v.path]);
+    return { error: 'type' };
   }
 
   const { error } = await supabase.from('materials').insert({
@@ -215,7 +219,13 @@ export async function replaceMaterialFile(input: z.input<typeof replaceSchema>):
     .eq('id', v.id)
     .maybeSingle();
   const object = current && v.path.startsWith(`${current.course_id}/`) ? await storedObject(supabase, v.path) : null;
-  if (!current || !object || !validateFile(v.fileName, object.size).ok) {
+  if (
+    !current ||
+    !object ||
+    !validateFile(v.fileName, object.size).ok ||
+    !sameExtension(v.path, v.fileName) ||
+    isActiveContent(object.mime)
+  ) {
     if (current && v.path.startsWith(`${current.course_id}/`)) await supabase.storage.from(BUCKET).remove([v.path]);
     return { ok: false };
   }

@@ -56,7 +56,11 @@ export default async function AccountPage() {
             {ownEmail ? null : <CardDescription>{t.account.emailFirst}</CardDescription>}
           </CardHeader>
           <CardContent>
-            <EmailForm t={t} current={ownEmail ?? undefined} />
+            <EmailForm
+              t={t}
+              current={ownEmail ?? undefined}
+              requirePassword={!(user.mustChangePassword && !ownEmail)}
+            />
           </CardContent>
         </Card>
 

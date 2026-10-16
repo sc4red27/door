@@ -82,6 +82,9 @@ export const en = {
     changeFailed: 'Could not update the password. Try a different one.',
     currentPassword: 'Current password',
     wrongCurrent: 'Your current password is incorrect.',
+    sessionExpired: 'Your session has ended. Please sign in again.',
+    revokeFailed:
+      'Your password was changed, but signing out your other sessions failed. Please try again; if it keeps failing, contact the administrator.',
     passwordChanged: 'Your password has been changed.',
     notId: 'Choose a password that is different from your ID.',
     stepEmail: 'Step 1 of 2 · Add your email',

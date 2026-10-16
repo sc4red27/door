@@ -108,15 +108,28 @@ export const getMyCourses = cache(async (): Promise<CourseSummary[]> => {
     .select(
       'course:courses!inner(id, code, name, year, ' +
         'semester:semesters!inner(id, name, is_current, start_date), ' +
-        'department:departments(code, name), ' +
-        'professor:profiles!courses_professor_id_fkey(full_name))',
+        'department:departments(code, name), professor_id)',
     )
     .eq('student_id', user.id);
   if (error) throw new Error(error.message);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  return ((data ?? []) as any[])
-    .map((row) => row.course)
-    .filter(Boolean)
+  const courses = ((data ?? []) as any[]).map((row) => row.course).filter(Boolean);
+
+  // Students cannot read professor profile rows (RLS keeps their email and
+  // login ID private), so names are looked up here, only for the professors
+  // of courses RLS has just confirmed this student is enrolled in.
+  const professorIds = [...new Set(courses.map((c) => c.professor_id).filter(Boolean))] as string[];
+  const names = new Map<string, string>();
+  if (professorIds.length > 0) {
+    const { data: professors } = await createAdminClient()
+      .from('profiles')
+      .select('id, full_name')
+      .in('id', professorIds)
+      .eq('role', 'professor');
+    for (const p of professors ?? []) names.set(p.id as string, p.full_name as string);
+  }
+
+  return courses
     .map(
       (c): CourseSummary => ({
         id: c.id,
@@ -125,7 +138,7 @@ export const getMyCourses = cache(async (): Promise<CourseSummary[]> => {
         year: c.year,
         semester: c.semester,
         department: c.department ?? null,
-        professor: c.professor?.full_name ?? null,
+        professor: (c.professor_id && names.get(c.professor_id)) || null,
       }),
     )
     .sort((a, b) => a.code.localeCompare(b.code));

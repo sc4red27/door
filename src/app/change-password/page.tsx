@@ -33,7 +33,7 @@ export default async function ChangePasswordPage() {
         </CardHeader>
         <CardContent>
           {needsEmail ? (
-            <EmailForm t={t} autoFocus />
+            <EmailForm t={t} autoFocus requirePassword={false} />
           ) : (
           <ActionForm action={changePassword} className="grid gap-4">
             {/* Lets password managers attach the new password to the right account. */}

@@ -83,6 +83,8 @@ export const ko: Dict = {
     changeFailed: '비밀번호를 변경하지 못했습니다. 다른 비밀번호로 시도해 주세요.',
     currentPassword: '현재 비밀번호',
     wrongCurrent: '현재 비밀번호가 올바르지 않습니다.',
+    sessionExpired: '세션이 종료되었습니다. 다시 로그인하세요.',
+    revokeFailed: '비밀번호는 변경되었지만 다른 기기의 로그아웃에 실패했습니다. 다시 시도하고, 계속 실패하면 관리자에게 문의하세요.',
     passwordChanged: '비밀번호를 변경했습니다.',
     notId: 'ID와 다른 비밀번호를 사용하세요.',
     stepEmail: '1/2단계 · 이메일 등록',

@@ -4,7 +4,18 @@ import { Field, Input } from '@/components/ui/form';
 import type { Dict } from '@/i18n/shared-server';
 
 /** Add or change the signed-in user's own email (first sign-in step 1, and My account). */
-export function EmailForm({ t, current, autoFocus = false }: { t: Dict; current?: string; autoFocus?: boolean }) {
+export function EmailForm({
+  t,
+  current,
+  autoFocus = false,
+  requirePassword,
+}: {
+  t: Dict;
+  current?: string;
+  autoFocus?: boolean;
+  /** Asks for the current password (re-authentication). The server enforces it regardless. */
+  requirePassword: boolean;
+}) {
   return (
     <ActionForm action={saveEmail} className="grid gap-4">
       <Field label={t.account.email} htmlFor="email" hint={t.account.emailHint}>
@@ -21,6 +32,11 @@ export function EmailForm({ t, current, autoFocus = false }: { t: Dict; current?
           defaultValue={current}
         />
       </Field>
+      {requirePassword ? (
+        <Field label={t.auth.currentPassword} htmlFor="email-current">
+          <Input id="email-current" name="current" type="password" required maxLength={200} autoComplete="current-password" />
+        </Field>
+      ) : null}
       <div>
         <SubmitButton>{t.account.saveEmail}</SubmitButton>
       </div>
