@@ -3,13 +3,11 @@ import {
   deleteSemester, promoteStudents, saveSemester, setCurrentSemester,
 } from '@/actions/admin';
 import { ActionForm, SubmitButton } from '@/components/action-form';
-import { TermGenerator } from '@/components/term-generator';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Checkbox, Field, Input, Label, Select } from '@/components/ui/form';
 import { Badge, EmptyState, PageHeader } from '@/components/ui/misc';
 import { requireUser } from '@/lib/auth';
 import { getSemesters } from '@/lib/data';
-import { todayInAppZone } from '@/lib/terms';
 import { getDict } from '@/i18n';
 
 export const metadata: Metadata = { title: 'Semesters' };
@@ -84,16 +82,6 @@ export default async function SemestersPage() {
         </section>
 
         <div className="grid content-start gap-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>{t.admin.generateTitle}</CardTitle>
-              <CardDescription>{t.admin.generateHint}</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <TermGenerator existing={semesters.map((semester) => semester.name)} today={todayInAppZone()} />
-            </CardContent>
-          </Card>
-
           <Card>
             <CardHeader>
               <CardTitle>{t.admin.semAdd}</CardTitle>
