@@ -72,6 +72,55 @@ const SHEETS: { kind: Kind; names: string[]; required: string[]; columns: string
   },
 ];
 
+/** Column widths (characters) for the template, by column name. */
+const WIDTH: Record<string, number> = {
+  code: 12, name: 34, start_date: 14, end_date: 14, current: 10, professor_id: 14, email: 32,
+  department_code: 18, semester: 11, description: 34, term: 10, student_id: 14, course_code: 14,
+};
+
+/** First sheet of the template. The importer skips it. */
+const INSTRUCTIONS_SHEET = 'Instructions';
+const INSTRUCTIONS: string[] = [
+  'D-Share import template  ·  D-Share 가져오기 템플릿',
+  '',
+  'HOW TO USE',
+  '1. Fill in only the sheets you need. Empty or deleted sheets are skipped.',
+  '2. Row 1 of every sheet holds the column names. Do not change or move them.',
+  '3. Row 2 is an example. Replace it with your own data or delete it, otherwise it is imported too.',
+  '4. One record per row. Write dates as 2027-03-02.',
+  '5. Save as .xlsx, then upload it in D-Share: Admin → CSV import → Import everything from one Excel file.',
+  '6. Sheets are imported in this order: Departments → Terms → Professors → Courses → Students → Enrollments,',
+  '   so courses and students can use departments and terms from the same file.',
+  '7. Existing codes and IDs are updated, never duplicated. You can fix the file and upload it again.',
+  '',
+  'SHEETS AND COLUMNS  (* = required)',
+  'Departments:  code* (e.g. CSE) · name*',
+  'Terms:  name* (e.g. 2027-1) · start_date* · end_date* · current (yes = make it the current term)',
+  'Professors:  professor_id* · name* · email* (they sign in with it) · department_code*',
+  'Courses:  code* · name* · department_code* · semester* (1-8) · description · term (default: current term) · professor_id',
+  '   Students of that department in that semester are enrolled automatically.',
+  'Students:  student_id* · name* · department_code* · semester* (1-8) · term (default: current term)',
+  'Enrollments:  student_id* · course_code* · term  (extra courses only, such as electives)',
+  '',
+  '사용 방법',
+  '1. 필요한 시트만 채우세요. 비어 있거나 삭제한 시트는 건너뜁니다.',
+  '2. 각 시트의 1행은 열 이름입니다. 바꾸거나 옮기지 마세요.',
+  '3. 2행은 예시입니다. 내 데이터로 바꾸거나 삭제하세요. 그대로 두면 함께 가져옵니다.',
+  '4. 한 행에 하나씩 입력합니다. 날짜는 2027-03-02 형식으로 입력하세요.',
+  '5. .xlsx로 저장한 뒤 D-Share의 관리 → CSV 가져오기 → 엑셀 파일 하나로 모두 가져오기에서 업로드하세요.',
+  '6. 학과 → 개설 학기 → 교수 → 강의 → 학생 → 추가 수강 순서로 가져옵니다.',
+  '7. 이미 있는 코드와 ID는 중복 없이 갱신됩니다. 파일을 고쳐 다시 올려도 됩니다.',
+  '',
+  '시트와 열  (* = 필수)',
+  '학과(Departments):  code* · name*',
+  '개설 학기(Terms):  name* · start_date* · end_date* · current (yes = 현재 개설 학기로 설정)',
+  '교수(Professors):  professor_id* · name* · email* (로그인에 사용) · department_code*',
+  '강의(Courses):  code* · name* · department_code* · semester* (1~8학기) · description · term · professor_id',
+  '학생(Students):  student_id* · name* · department_code* · semester* (1~8학기) · term',
+  '추가 수강(Enrollments):  student_id* · course_code* · term  (선택 과목 등 추가 강의만)',
+];
+const SKIPPED_SHEETS = ['instructions', '안내'];
+
 const CHUNK = 40; // rows per server call
 const PREVIEW = 200;
 
@@ -111,7 +160,15 @@ export function WorkbookImporter() {
   };
 
   function downloadTemplate() {
-    const bytes = writeWorkbook(SHEETS.map((s) => ({ name: s.names[0][0].toUpperCase() + s.names[0].slice(1), rows: [s.columns, s.example] })));
+    const bytes = writeWorkbook([
+      { name: INSTRUCTIONS_SHEET, rows: INSTRUCTIONS.map((line) => [line]), widths: [120], header: true },
+      ...SHEETS.map((s) => ({
+        name: s.names[0][0].toUpperCase() + s.names[0].slice(1),
+        rows: [s.columns, s.example],
+        widths: s.columns.map((c) => WIDTH[c] ?? 16),
+        header: true,
+      })),
+    ]);
     save('d-share-import-template.xlsx', new Uint8Array(bytes), 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
   }
 
@@ -136,7 +193,7 @@ export function WorkbookImporter() {
             : sheet.rows;
         list.push({ kind: spec.kind, rows, missing: spec.required.filter((c) => !sheet.headers.includes(c)) });
       }
-      setIgnored(Object.keys(sheets).filter((n) => !used.has(n)));
+      setIgnored(Object.keys(sheets).filter((n) => !used.has(n) && !SKIPPED_SHEETS.includes(n)));
       if (list.length === 0) setError(t.admin.noSheets);
       setFound(list);
     } catch (e) {

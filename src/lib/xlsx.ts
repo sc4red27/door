@@ -119,17 +119,40 @@ function columnName(index: number): string {
   return name;
 }
 
+export type SheetSpec = {
+  name: string;
+  rows: string[][];
+  /** Column widths in characters; columns are Text-formatted so typed IDs and dates stay as written. */
+  widths?: number[];
+  /** Style row 1 as a header (bold, shaded) and keep it visible while scrolling. */
+  header?: boolean;
+};
+
+// Cell styles defined in styles.xml below.
+const TEXT = 1;
+const HEADER = 2;
+
 /** Builds a workbook where every cell is text (so IDs keep leading zeros). */
-export function writeWorkbook(sheets: { name: string; rows: string[][] }[]): Uint8Array {
-  const sheetXml = (rows: string[][]) =>
+export function writeWorkbook(sheets: SheetSpec[]): Uint8Array {
+  const sheetXml = ({ rows, widths = [], header = false }: SheetSpec) =>
     '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
-    '<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetData>' +
+    '<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">' +
+    (header
+      ? '<sheetViews><sheetView workbookViewId="0"><pane ySplit="1" topLeftCell="A2" activePane="bottomLeft" state="frozen"/></sheetView></sheetViews>'
+      : '') +
+    (widths.length
+      ? '<cols>' + widths.map((w, i) => `<col min="${i + 1}" max="${i + 1}" width="${w}" customWidth="1" style="${TEXT}"/>`).join('') + '</cols>'
+      : '') +
+    '<sheetData>' +
     rows
       .map(
         (cells, r) =>
           `<row r="${r + 1}">` +
           cells
-            .map((c, i) => `<c r="${columnName(i)}${r + 1}" t="inlineStr" s="1"><is><t xml:space="preserve">${escapeXml(c)}</t></is></c>`)
+            .map((c, i) => {
+              const style = header && r === 0 ? HEADER : TEXT;
+              return `<c r="${columnName(i)}${r + 1}" t="inlineStr" s="${style}"><is><t xml:space="preserve">${escapeXml(c)}</t></is></c>`;
+            })
             .join('') +
           '</row>',
       )
@@ -174,18 +197,21 @@ export function writeWorkbook(sheets: { name: string; rows: string[][] }[]): Uin
     'xl/styles.xml': strToU8(
       '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
         '<styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">' +
-        '<fonts count="1"><font><sz val="11"/><name val="Calibri"/></font></fonts>' +
-        '<fills count="2"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill></fills>' +
+        '<fonts count="2"><font><sz val="11"/><name val="Calibri"/></font>' +
+        '<font><b/><sz val="11"/><color rgb="FF1F2A44"/><name val="Calibri"/></font></fonts>' +
+        '<fills count="3"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill>' +
+        '<fill><patternFill patternType="solid"><fgColor rgb="FFE8EEFF"/><bgColor indexed="64"/></patternFill></fill></fills>' +
         '<borders count="1"><border><left/><right/><top/><bottom/><diagonal/></border></borders>' +
         '<cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs>' +
-        '<cellXfs count="2"><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/>' +
-        '<xf numFmtId="49" fontId="0" fillId="0" borderId="0" xfId="0" applyNumberFormat="1"/></cellXfs>' +
+        '<cellXfs count="3"><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/>' +
+        '<xf numFmtId="49" fontId="0" fillId="0" borderId="0" xfId="0" applyNumberFormat="1"/>' +
+        '<xf numFmtId="49" fontId="1" fillId="2" borderId="0" xfId="0" applyNumberFormat="1" applyFont="1" applyFill="1"/></cellXfs>' +
         '<cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles>' +
         '</styleSheet>',
     ),
   };
   sheets.forEach((s, i) => {
-    files[`xl/worksheets/sheet${i + 1}.xml`] = strToU8(sheetXml(s.rows));
+    files[`xl/worksheets/sheet${i + 1}.xml`] = strToU8(sheetXml(s));
   });
   return zipSync(files, { level: 6 });
 }
