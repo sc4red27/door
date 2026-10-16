@@ -372,3 +372,95 @@ export async function importCourses(rows: Rows, _password: string | null, offset
   revalidatePath('/admin/courses');
   return results;
 }
+
+/* -------------------------------------------------------------- departments */
+
+const departmentRow = z.object({
+  code: z.string().trim().regex(/^[A-Za-z0-9_-]{2,16}$/),
+  name: z.string().trim().min(1).max(120),
+});
+
+/** departments: code, name. An existing code gets its name updated. */
+export async function importDepartments(rows: Rows, _password: string | null, offset: number): Promise<ImportRowResult[]> {
+  await requireUser(['admin']);
+  const t = await getDict();
+  if (!checkInput(rows, null)) return [];
+
+  const admin = createAdminClient();
+  const results: ImportRowResult[] = [];
+  for (const [i, raw] of rows.entries()) {
+    const base = { row: offset + i + 1, id: String(raw.code ?? '') };
+    const parsed = departmentRow.safeParse(raw);
+    if (!parsed.success) {
+      results.push({ ...base, status: 'error', message: t.errors.invalidRow });
+      continue;
+    }
+    const code = parsed.data.code.toUpperCase();
+    const { data: existing } = await admin.from('departments').select('id').eq('code', code).maybeSingle();
+    const { error } = existing
+      ? await admin.from('departments').update({ name: parsed.data.name }).eq('id', existing.id)
+      : await admin.from('departments').insert({ code, name: parsed.data.name });
+    results.push(
+      error
+        ? { ...base, status: 'error', message: error.code === '23505' ? t.admin.duplicate : error.message }
+        : { ...base, status: existing ? 'updated' : 'created' },
+    );
+  }
+  revalidateTag(COURSES_TAG);
+  revalidatePath('/admin', 'layout');
+  return results;
+}
+
+/* -------------------------------------------------------------------- terms */
+
+const termRow = z
+  .object({
+    name: z.string().trim().min(1).max(40),
+    start_date: z.string().trim().regex(/^\d{4}-\d{2}-\d{2}$/),
+    end_date: z.string().trim().regex(/^\d{4}-\d{2}-\d{2}$/),
+    current: z.string().trim().optional(),
+  })
+  .refine((v) => v.end_date > v.start_date);
+
+const isYes = (value: string | undefined) => /^(y|yes|true|1|o|예|현재)$/i.test(value ?? '');
+
+/**
+ * terms: name, start_date, end_date [, current]. An existing name gets its
+ * dates updated. A row marked current (yes/true/1) becomes the current term.
+ */
+export async function importTerms(rows: Rows, _password: string | null, offset: number): Promise<ImportRowResult[]> {
+  await requireUser(['admin']);
+  const t = await getDict();
+  if (!checkInput(rows, null)) return [];
+
+  const admin = createAdminClient();
+  const results: ImportRowResult[] = [];
+  for (const [i, raw] of rows.entries()) {
+    const base = { row: offset + i + 1, id: String(raw.name ?? '') };
+    const parsed = termRow.safeParse(raw);
+    if (!parsed.success) {
+      results.push({ ...base, status: 'error', message: t.errors.invalidTerm });
+      continue;
+    }
+    const { name, start_date, end_date, current } = parsed.data;
+    const { data: existing } = await admin.from('semesters').select('id').eq('name', name).maybeSingle();
+    const write = existing
+      ? await admin.from('semesters').update({ start_date, end_date }).eq('id', existing.id).select('id').single()
+      : await admin.from('semesters').insert({ name, start_date, end_date }).select('id').single();
+    if (write.error || !write.data) {
+      results.push({ ...base, status: 'error', message: write.error?.code === '23505' ? t.admin.duplicate : t.common.failed });
+      continue;
+    }
+    let message: string | undefined;
+    if (isYes(current)) {
+      // At most one current term (unique index): clear the old one first.
+      await admin.from('semesters').update({ is_current: false }).eq('is_current', true).neq('id', write.data.id);
+      const { error } = await admin.from('semesters').update({ is_current: true }).eq('id', write.data.id);
+      message = error ? t.common.failed : t.admin.setAsCurrent;
+    }
+    results.push({ ...base, status: existing ? 'updated' : 'created', message });
+  }
+  revalidateTag(COURSES_TAG);
+  revalidatePath('/admin', 'layout');
+  return results;
+}

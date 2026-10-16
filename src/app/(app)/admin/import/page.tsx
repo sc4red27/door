@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { CsvImporter } from '@/components/csv-importer';
+import { WorkbookImporter } from '@/components/workbook-importer';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { PageHeader } from '@/components/ui/misc';
 import { requireUser } from '@/lib/auth';
@@ -24,6 +25,15 @@ export default async function ImportPage() {
     <>
       <PageHeader title={t.nav.import} />
       <div className="grid gap-4">
+        <Card>
+          <CardHeader>
+            <CardTitle>{t.admin.workbookTitle}</CardTitle>
+            <CardDescription>{t.admin.workbookDescription}</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <WorkbookImporter />
+          </CardContent>
+        </Card>
         {sections.map((section) => (
           <Card key={section.kind}>
             <CardHeader>

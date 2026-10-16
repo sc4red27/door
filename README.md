@@ -122,6 +122,7 @@ Seed data: 2 departments (CSE, BUS), 2 semesters (2026-1 past, 2026-2 current), 
 
 - *Departments / Semesters:* create, rename, delete, switch the current semester.
 - *Promote students:* moves everyone from one semester to another, optionally one year up (capped at "highest year"), and auto-enrolls them in the matching courses.
+- *One Excel file* (Admin → CSV import → "Import everything from one Excel file"): download the template, fill any of its sheets (Departments, Terms, Professors, Courses, Students, Enrollments) and upload it once. Sheets are imported in that order, so courses and students can use departments and terms from the same file; existing codes and IDs are updated. Parsed in the browser with `fflate` (cell values only - no formulas, macros or external links), then sent in chunks to the same admin-only import actions as the CSVs.
 - *CSV import* (UTF-8, header row required):
 
   ```
